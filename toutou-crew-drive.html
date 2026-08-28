@@ -7,6 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>Toutou Crew — Finances</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -1937,6 +1938,63 @@ async function uploadDriveCache() {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(gDriveCache),
+  });
+}
+
+// --- Dossiers Drive pour le classement des factures (Factures/AAAA/MM - Mois) ---
+const driveFolderCache = {};
+async function findOrCreateDriveFolder(name, parentId) {
+  const parentClause = parentId ? `'${parentId}' in parents` : `'root' in parents`;
+  const q = encodeURIComponent(`name='${name}' and mimeType='application/vnd.google-apps.folder' and ${parentClause} and trashed=false`);
+  const listRes = await driveApiFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`);
+  const listData = await listRes.json();
+  if (listData.files && listData.files.length > 0) return listData.files[0].id;
+  const createRes = await driveApiFetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', parents: parentId ? [parentId] : undefined }),
+  });
+  const createData = await createRes.json();
+  return createData.id;
+}
+const INVOICE_MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+async function getInvoiceMonthFolderId(dateISO) {
+  const year = dateISO.slice(0, 4);
+  const monthNum = dateISO.slice(5, 7);
+  const cacheKey = `${year}-${monthNum}`;
+  if (driveFolderCache[cacheKey]) return driveFolderCache[cacheKey];
+
+  driveFolderCache.factures = driveFolderCache.factures || await findOrCreateDriveFolder('Factures', null);
+  const yearKey = 'year-' + year;
+  driveFolderCache[yearKey] = driveFolderCache[yearKey] || await findOrCreateDriveFolder(year, driveFolderCache.factures);
+  const monthName = `${monthNum} - ${INVOICE_MONTH_NAMES[parseInt(monthNum, 10) - 1]}`;
+  driveFolderCache[cacheKey] = await findOrCreateDriveFolder(monthName, driveFolderCache[yearKey]);
+  return driveFolderCache[cacheKey];
+}
+
+// Upload (ou remplacement si déjà existant, pour une réimpression) d'un
+// fichier dans un dossier Drive donné, via une requête multipart.
+async function uploadFileToDrive(blob, filename, mimeType, parentId) {
+  const q = encodeURIComponent(`name='${filename}' and '${parentId}' in parents and trashed=false`);
+  const listRes = await driveApiFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id)`);
+  const listData = await listRes.json();
+  const existingId = listData.files && listData.files[0] ? listData.files[0].id : null;
+
+  const boundary = 'toutoucrew-' + Date.now();
+  const metadata = existingId ? {} : { name: filename, mimeType, parents: [parentId] };
+  const body = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+    `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`,
+    blob,
+    `\r\n--${boundary}--`,
+  ]);
+  const url = existingId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  await driveApiFetch(url, {
+    method: existingId ? 'PATCH' : 'POST',
+    headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body,
   });
 }
 
@@ -4862,7 +4920,61 @@ paymentMethodModal.querySelectorAll('[data-method]').forEach(btn => {
   });
 });
 
-// Génération de facture PDF (via impression navigateur) pour un encaissement.
+// Construit le PDF de la facture (mise en page simple via jsPDF) — c'est ce
+// fichier qui est envoyé sur Drive, en plus de l'aperçu imprimable à l'écran.
+function buildInvoicePdfBlob(client, meta) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(`Facture n° ${meta.numLabel}`, 15, 20);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Date d'émission : ${meta.dateEmission}`, 15, 28);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 15, 44);
+  doc.setFont('helvetica', 'normal');
+  doc.text(settings.businessAddress || '', 15, 49);
+  doc.text(`SIRET : ${settings.businessSiret || ''}`, 15, 54);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Client', 120, 44);
+  doc.setFont('helvetica', 'normal');
+  doc.text(client ? client.ownerName : '', 120, 49);
+  if (client && client.address) doc.text(client.address, 120, 54);
+
+  let y = 70;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Désignation', 15, y);
+  doc.text('Date', 110, y);
+  doc.text('Qté', 140, y);
+  doc.text('Prix unitaire', 160, y);
+  y += 2;
+  doc.line(15, y, 195, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.text(meta.designation, 15, y);
+  doc.text(meta.datePrestation, 110, y);
+  doc.text('1', 140, y);
+  doc.text(meta.amountLabel, 160, y);
+
+  y += 12;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Total (TVA non applicable) : ${meta.amountLabel}`, 15, y);
+
+  y += 16;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text("TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM", 15, y);
+  y += 6;
+  doc.text(meta.paymentLine, 15, y);
+
+  return doc.output('blob');
+}
+
+// Génération de facture (impression + sauvegarde d'un PDF sur Drive, rangé
+// dans Factures/AAAA/MM - Mois) pour un encaissement.
 // Le n° de facture est attribué une seule fois (numérotation continue) et
 // reste identique si on réimprime la même facture plus tard.
 async function openInvoice(entryId) {
@@ -4911,6 +5023,16 @@ async function openInvoice(entryId) {
     <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM</p>
     <p style="font-size:0.85rem;">${paymentLine}</p>
   `;
+
+  try {
+    const pdfBlob = buildInvoicePdfBlob(client, { numLabel, dateEmission, datePrestation, designation, amountLabel: fmt(entry.amount), paymentLine });
+    const monthFolderId = await getInvoiceMonthFolderId(entry.invoiceDate);
+    await uploadFileToDrive(pdfBlob, `Facture-${numLabel}.pdf`, 'application/pdf', monthFolderId);
+  } catch (err) {
+    console.error('Échec de la sauvegarde de la facture sur Drive', err);
+    alert("La facture s'est ouverte mais n'a pas pu être sauvegardée sur Drive : " + err.message);
+  }
+
   window.print();
 }
 
