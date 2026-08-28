@@ -5039,8 +5039,8 @@ async function buildInvoicePdfBlob(client, meta) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('Toutou Crew', 15, 46);
-  doc.text(settings.businessOwnerName || '', 15, 51);
   doc.setFont('helvetica', 'normal');
+  doc.text(settings.businessOwnerName || '', 15, 51);
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
   const vendorEndY = printLines(doc, [
     settings.businessAddress,
@@ -5052,7 +5052,6 @@ async function buildInvoicePdfBlob(client, meta) {
   ], 15, 56);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Client', 120, 46);
   doc.text(client ? client.ownerName : '', 120, 51);
   doc.setFont('helvetica', 'normal');
   const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
@@ -5061,7 +5060,7 @@ async function buildInvoicePdfBlob(client, meta) {
     clientCityLine,
   ], 120, 56);
 
-  let y = Math.max(vendorEndY, clientEndY) + 6;
+  let y = Math.max(vendorEndY, clientEndY) + 12;
   doc.setFontSize(9);
   doc.text(`Facture n° ${meta.numLabel} — Date d'émission : ${meta.dateEmission}`, 15, y);
 
@@ -5130,7 +5129,7 @@ async function openInvoice(entryId) {
     <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem;">
       <div>
         <strong>Toutou Crew</strong><br>
-        <strong>${escapeHtml(settings.businessOwnerName || '')}</strong><br>
+        ${escapeHtml(settings.businessOwnerName || '')}<br>
         ${escapeHtml(settings.businessAddress || '')}<br>
         ${[settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ') ? escapeHtml([settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ')) + '<br>' : ''}
         SIRET : ${escapeHtml(settings.businessSiret || '')}
@@ -5139,13 +5138,13 @@ async function openInvoice(entryId) {
         ${settings.businessWebsite ? '<br>Site : ' + escapeHtml(settings.businessWebsite) : ''}
       </div>
       <div>
-        <strong>Client</strong><br>
-        ${client ? escapeHtml(client.ownerName) : ''}<br>
+        <br>
+        <strong>${client ? escapeHtml(client.ownerName) : ''}</strong><br>
         ${client && client.address ? escapeHtml(client.address) + '<br>' : ''}
         ${clientCityLine ? escapeHtml(clientCityLine) : ''}
       </div>
     </div>
-    <p style="margin-top:16px; font-size:0.85rem;">Facture n° ${numLabel} — Date d'émission : ${dateEmission}</p>
+    <p style="margin-top:40px; font-size:0.85rem;">Facture n° ${numLabel} — Date d'émission : ${dateEmission}</p>
     <table>
       <thead><tr><th>Désignation</th><th>Date</th><th>Qté</th><th style="text-align:right;">Prix unitaire</th></tr></thead>
       <tbody>
