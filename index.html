@@ -1479,6 +1479,7 @@
     <div class="subtabs">
       <div class="subtab active" data-group="historique" data-subpanel="histoire-mois">Par mois</div>
       <div class="subtab" data-group="historique" data-subpanel="histoire-impayes">Impayés</div>
+      <div class="subtab" data-group="historique" data-subpanel="histoire-urssaf">URSSAF</div>
     </div>
     <div class="subpanel active" data-group="historique" id="subpanel-histoire-mois">
       <div id="history-list"></div>
@@ -1486,6 +1487,17 @@
     <div class="subpanel" data-group="historique" id="subpanel-histoire-impayes">
       <div id="unpaid-summary"></div>
       <div id="unpaid-list"></div>
+    </div>
+    <div class="subpanel" data-group="historique" id="subpanel-histoire-urssaf">
+      <div class="settings-row">
+        <div class="toggle-row">
+          <label style="margin:0;">Déclaration trimestrielle</label>
+          <div class="switch" id="s-urssaf-quarterly-toggle"></div>
+        </div>
+        <div class="note">Active si tu as choisi le rythme trimestriel à l'inscription sur autoentrepreneur.urssaf.fr (mensuel par défaut).</div>
+      </div>
+      <div class="note" style="margin-bottom:14px;">Le CA affiché ici est celui réellement <strong>encaissé</strong> pendant chaque période (pas la date de la balade) — c'est le chiffre à recopier tel quel sur le site de l'Urssaf.</div>
+      <div id="urssaf-list"></div>
     </div>
   </div>
 
@@ -2132,7 +2144,8 @@ const DEFAULT_SETTINGS = {
   businessPhone: '',
   businessEmail: '',
   businessWebsite: '',
-  nextInvoiceNumber: 1
+  nextInvoiceNumber: 1,
+  urssafQuarterly: false
 };
 
 let entries = [];
@@ -3678,6 +3691,84 @@ function firstDayOfMonth(key) {
   return key + '-01';
 }
 
+// --- Déclaration Urssaf : regroupe le CA réellement ENCAISSÉ (date de
+// paiement, pas date de la balade) par période de déclaration (mois ou
+// trimestre selon le rythme choisi), avec la date limite associée.
+function urssafPeriodKey(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const year = d.getFullYear();
+  if (settings.urssafQuarterly) {
+    const quarter = Math.floor(d.getMonth() / 3) + 1;
+    return `${year}-T${quarter}`;
+  }
+  return `${year}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function urssafPeriodInfo(key) {
+  if (key.includes('-T')) {
+    const [yearStr, qStr] = key.split('-T');
+    const year = parseInt(yearStr, 10);
+    const quarter = parseInt(qStr, 10);
+    const endMonthIndex0 = quarter * 3 - 1;
+    const startLabel = new Date(year, quarter * 3 - 3, 1).toLocaleDateString('fr-FR', { month: 'long' });
+    const endLabel = new Date(year, endMonthIndex0, 1).toLocaleDateString('fr-FR', { month: 'long' });
+    return { label: `T${quarter} ${year} (${startLabel} – ${endLabel})`, deadline: new Date(year, endMonthIndex0 + 1, 0) };
+  }
+  const [yearStr, monthStr] = key.split('-');
+  const year = parseInt(yearStr, 10);
+  const monthIndex0 = parseInt(monthStr, 10) - 1;
+  return {
+    label: new Date(year, monthIndex0, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+    deadline: new Date(year, monthIndex0 + 1, 0),
+  };
+}
+function computeUrssafPeriods() {
+  const acreFactor = settings.acreActive ? (1 - settings.acrePct / 100) : 1;
+  const byPeriod = {};
+  entries.filter(e => e.paid !== false).forEach(e => {
+    const key = urssafPeriodKey(e.paidDate || e.date);
+    if (!byPeriod[key]) byPeriod[key] = { ca: 0, count: 0 };
+    byPeriod[key].ca += e.amount;
+    byPeriod[key].count += 1;
+  });
+  return Object.keys(byPeriod).sort().reverse().map(key => {
+    const { label, deadline } = urssafPeriodInfo(key);
+    const ca = byPeriod[key].ca;
+    return { key, label, ca, cotisations: ca * (settings.tauxUrssaf / 100) * acreFactor, count: byPeriod[key].count, deadline };
+  });
+}
+function renderUrssafView() {
+  const toggle = document.getElementById('s-urssaf-quarterly-toggle');
+  toggle.classList.toggle('on', settings.urssafQuarterly);
+
+  const listBox = document.getElementById('urssaf-list');
+  const periods = computeUrssafPeriods();
+  if (periods.length === 0) {
+    listBox.innerHTML = '<div class="empty">Aucun encaissement réglé pour l\'instant.</div>';
+    return;
+  }
+  const todayStr = todayISO();
+  listBox.innerHTML = periods.map(p => {
+    const deadlineStr = `${p.deadline.getFullYear()}-${String(p.deadline.getMonth() + 1).padStart(2, '0')}-${String(p.deadline.getDate()).padStart(2, '0')}`;
+    const isPast = deadlineStr < todayStr;
+    return `
+      <div class="unpaid-client-card">
+        <div class="unpaid-client-header" style="cursor:default;">
+          <span class="unpaid-client-name" style="text-transform:capitalize;">${p.label}</span>
+          <span class="unpaid-client-total">${fmt(p.ca)}</span>
+        </div>
+        <div class="unpaid-entry-line">
+          <span>Cotisations estimées · ${p.count} encaissement${p.count > 1 ? 's' : ''}</span>
+          <span class="unpaid-entry-amount">${fmt(p.cotisations)}</span>
+        </div>
+        <div class="unpaid-entry-line">
+          <span>${isPast ? '⚠️ Déclaration à faire' : 'Déclaration avant le'}</span>
+          <span class="unpaid-entry-amount">${p.deadline.toLocaleDateString('fr-FR')}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function computeMonthStats(monthKey) {
   const monthEntries = entries.filter(e => e.date.slice(0, 7) === monthKey);
   const ca = monthEntries.reduce((s, e) => s + e.amount, 0);
@@ -3843,6 +3934,7 @@ function renderEntriesList(monthKey) {
       }
       entry.paid = false;
       entry.paymentMethod = null;
+      entry.paidDate = null;
       await saveEntries();
       render();
     });
@@ -3963,6 +4055,7 @@ function renderHistory() {
       }
       entry.paid = false;
       entry.paymentMethod = null;
+      entry.paidDate = null;
       await saveEntries();
       render();
     });
@@ -3976,6 +4069,7 @@ function renderHistory() {
   });
 
   renderUnpaidView();
+  renderUrssafView();
 }
 
 // Vue "Impayés" : tous les encaissements en attente, tous mois confondus,
@@ -4882,6 +4976,12 @@ document.getElementById('s-are-toggle').addEventListener('click', async () => {
   render();
 });
 
+document.getElementById('s-urssaf-quarterly-toggle').addEventListener('click', async () => {
+  settings.urssafQuarterly = !settings.urssafQuarterly;
+  await saveSettings();
+  render();
+});
+
 document.getElementById('s-micro-created-toggle').addEventListener('click', async () => {
   settings.microCreatedThisYear = !settings.microCreatedThisYear;
   await saveSettings();
@@ -4981,6 +5081,7 @@ paymentMethodModal.querySelectorAll('[data-method]').forEach(btn => {
     if (entry) {
       entry.paid = true;
       entry.paymentMethod = btn.dataset.method;
+      entry.paidDate = todayISO();
       await saveEntries();
     }
     closePaymentMethodModal();
