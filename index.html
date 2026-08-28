@@ -4891,7 +4891,7 @@ async function openInvoice(entryId) {
     <p>Date d'émission : ${dateEmission}</p>
     <div style="display:flex; justify-content:space-between; margin-top:24px; gap:24px;">
       <div>
-        <strong>${escapeHtml(settings.businessOwnerName || '')}</strong><br>
+        <strong>${escapeHtml(settings.businessOwnerName || '')}${settings.businessOwnerName ? ' — EI' : ''}</strong><br>
         ${escapeHtml(settings.businessAddress || '')}<br>
         SIRET : ${escapeHtml(settings.businessSiret || '')}
       </div>
@@ -4902,12 +4902,12 @@ async function openInvoice(entryId) {
       </div>
     </div>
     <table>
-      <thead><tr><th>Désignation</th><th>Date</th><th style="text-align:right;">Montant</th></tr></thead>
+      <thead><tr><th>Désignation</th><th>Date</th><th>Qté</th><th style="text-align:right;">Prix unitaire</th></tr></thead>
       <tbody>
-        <tr><td>${escapeHtml(designation)}</td><td>${datePrestation}</td><td style="text-align:right;">${fmt(entry.amount)}</td></tr>
+        <tr><td>${escapeHtml(designation)}</td><td>${datePrestation}</td><td>1</td><td style="text-align:right;">${fmt(entry.amount)}</td></tr>
       </tbody>
     </table>
-    <div class="invoice-total">Total TTC : ${fmt(entry.amount)}</div>
+    <div class="invoice-total">Total (TVA non applicable) : ${fmt(entry.amount)}</div>
     <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM</p>
     <p style="font-size:0.85rem;">${paymentLine}</p>
   `;
