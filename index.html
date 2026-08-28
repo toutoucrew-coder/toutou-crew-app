@@ -5014,6 +5014,13 @@ function logoSvgToPngDataUrl(size) {
 
 // Écrit une liste de lignes (en ignorant les lignes vides) les unes sous les
 // autres à partir de x/startY, et renvoie le y suivant la dernière ligne.
+// La police standard du PDF (Helvetica) ne sait pas afficher l'espace fine
+// insécable utilisée par toLocaleString('fr-FR') comme séparateur de milliers
+// (ex. "1 125,00 €") — remplacée par un espace normal pour éviter le "/".
+function pdfSafeText(str) {
+  return String(str).replace(/[  ]/g, ' ');
+}
+
 function printLines(doc, lines, x, startY, lineHeight = 5, align = 'left') {
   let y = startY;
   lines.forEach(line => {
@@ -5198,7 +5205,7 @@ async function openInvoice(entryId) {
   `;
 
   try {
-    const pdfBlob = await buildInvoicePdfBlob(client, { numLabel, dateEmission, datePrestation, designation, amountLabel: fmt(entry.amount), totalLabel });
+    const pdfBlob = await buildInvoicePdfBlob(client, { numLabel, dateEmission, datePrestation, designation, amountLabel: pdfSafeText(fmt(entry.amount)), totalLabel });
     const monthFolderId = await getInvoiceMonthFolderId(entry.invoiceDate);
     await uploadFileToDrive(pdfBlob, `Facture-${numLabel}.pdf`, 'application/pdf', monthFolderId);
   } catch (err) {
