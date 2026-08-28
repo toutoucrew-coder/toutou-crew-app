@@ -1518,6 +1518,12 @@
       <input type="text" id="s-biz-address" placeholder="12 rue Merlin, 75019 Paris">
       <label for="s-biz-siret" style="margin-top:8px;">N° SIRET</label>
       <input type="text" id="s-biz-siret" placeholder="123 456 789 00012">
+      <label for="s-biz-phone" style="margin-top:8px;">Téléphone</label>
+      <input type="tel" id="s-biz-phone" placeholder="06 12 34 56 78">
+      <label for="s-biz-email" style="margin-top:8px;">Email</label>
+      <input type="email" id="s-biz-email" placeholder="contact@toutoucrew.fr">
+      <label for="s-biz-website" style="margin-top:8px;">Site web</label>
+      <input type="text" id="s-biz-website" placeholder="toutoucrew.fr">
       <div class="note">Ces informations apparaissent sur les factures générées pour tes clients.</div>
     </div>
 
@@ -2114,6 +2120,9 @@ const DEFAULT_SETTINGS = {
   businessOwnerName: '',
   businessAddress: '',
   businessSiret: '',
+  businessPhone: '',
+  businessEmail: '',
+  businessWebsite: '',
   nextInvoiceNumber: 1
 };
 
@@ -4046,6 +4055,9 @@ function renderSettings() {
   document.getElementById('s-biz-name').value = settings.businessOwnerName || '';
   document.getElementById('s-biz-address').value = settings.businessAddress || '';
   document.getElementById('s-biz-siret').value = settings.businessSiret || '';
+  document.getElementById('s-biz-phone').value = settings.businessPhone || '';
+  document.getElementById('s-biz-email').value = settings.businessEmail || '';
+  document.getElementById('s-biz-website').value = settings.businessWebsite || '';
   document.getElementById('s-taux').value = settings.tauxUrssaf;
   document.getElementById('s-acre-pct').value = settings.acrePct;
   document.getElementById('s-sjr').value = settings.sjr;
@@ -4805,6 +4817,9 @@ function bindSetting(id, key, isFloat = true) {
 bindSetting('s-biz-name', 'businessOwnerName', false);
 bindSetting('s-biz-address', 'businessAddress', false);
 bindSetting('s-biz-siret', 'businessSiret', false);
+bindSetting('s-biz-phone', 'businessPhone', false);
+bindSetting('s-biz-email', 'businessEmail', false);
+bindSetting('s-biz-website', 'businessWebsite', false);
 bindSetting('s-taux', 'tauxUrssaf');
 bindSetting('s-acre-pct', 'acrePct');
 bindSetting('s-sjr', 'sjr');
@@ -4949,7 +4964,7 @@ paymentMethodModal.querySelectorAll('[data-method]').forEach(btn => {
 
 // Logo Toutou Crew (même tracé que le header/la page de connexion), réutilisé
 // tel quel dans l'aperçu imprimable de la facture et rasterisé pour le PDF.
-const TOUTOU_LOGO_SVG = `<svg width="60" height="60" viewBox="0 0 146 146" fill="none" xmlns="http://www.w3.org/2000/svg">
+const TOUTOU_LOGO_SVG = `<svg width="90" height="90" viewBox="0 0 146 146" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M87.1898 89.8846C83.5304 92.6289 74.382 92.6288 63.8613 90.7993C65.691 97.3551 70.7226 105.161 72.5523 104.063C74.8394 102.691 90.8492 87.1403 87.1898 89.8846Z" fill="#ED7E47"/>
   <path d="M77.5665 79.135C80.3765 79.135 82.6545 76.1929 82.6545 72.5636C82.6545 68.9343 80.3765 65.9922 77.5665 65.9922C74.7565 65.9922 72.4785 68.9343 72.4785 72.5636C72.4785 76.1929 74.7565 79.135 77.5665 79.135Z" fill="white"/>
   <path d="M62.3027 72.5636C62.3027 76.1902 64.4878 79.135 67.186 79.135C69.8843 79.135 72.0547 76.2337 72.0547 72.5636C72.0547 68.8935 69.9137 65.9922 67.186 65.9922C64.4584 65.9922 62.3027 68.937 62.3027 72.5636Z" fill="white"/>
@@ -4983,37 +4998,58 @@ function logoSvgToPngDataUrl(size) {
   });
 }
 
+// Écrit une liste de lignes (en ignorant les lignes vides) les unes sous les
+// autres à partir de x/startY, et renvoie le y suivant la dernière ligne.
+function printLines(doc, lines, x, startY, lineHeight = 5) {
+  let y = startY;
+  lines.forEach(line => {
+    if (!line) return;
+    doc.text(line, x, y);
+    y += lineHeight;
+  });
+  return y;
+}
+
 // Construit le PDF de la facture (mise en page simple via jsPDF) — c'est ce
 // fichier qui est envoyé sur Drive, en plus de l'aperçu imprimable à l'écran.
 async function buildInvoicePdfBlob(client, meta) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   try {
-    const logoDataUrl = await logoSvgToPngDataUrl(200);
-    doc.addImage(logoDataUrl, 'PNG', 15, 10, 18, 18);
+    const logoDataUrl = await logoSvgToPngDataUrl(300);
+    doc.addImage(logoDataUrl, 'PNG', 15, 10, 28, 28);
   } catch { /* pas bloquant si le logo ne peut pas être rasterisé */ }
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(`Facture n° ${meta.numLabel}`, 40, 20);
-  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(20);
+  doc.text('Toutou Crew', 50, 27);
+
   doc.setFontSize(10);
-  doc.text(`Date d'émission : ${meta.dateEmission}`, 40, 26);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 15, 48);
+  doc.setFont('helvetica', 'normal');
+  const businessContactLine = [settings.businessPhone, settings.businessEmail, settings.businessWebsite].filter(Boolean).join(' · ');
+  const vendorEndY = printLines(doc, [
+    settings.businessAddress,
+    settings.businessSiret ? `SIRET : ${settings.businessSiret}` : '',
+    businessContactLine,
+  ], 15, 53);
 
   doc.setFont('helvetica', 'bold');
-  doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 15, 44);
+  doc.text('Client', 120, 48);
   doc.setFont('helvetica', 'normal');
-  doc.text(settings.businessAddress || '', 15, 49);
-  doc.text(`SIRET : ${settings.businessSiret || ''}`, 15, 54);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Client', 120, 44);
-  doc.setFont('helvetica', 'normal');
-  doc.text(client ? client.ownerName : '', 120, 49);
-  if (client && client.address) doc.text(client.address, 120, 54);
   const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
-  if (clientCityLine) doc.text(clientCityLine, 120, client.address ? 59 : 54);
+  const clientEndY = printLines(doc, [
+    client ? client.ownerName : '',
+    client && client.address ? client.address : '',
+    clientCityLine,
+  ], 120, 53);
 
-  let y = 70;
+  let y = Math.max(vendorEndY, clientEndY) + 6;
+  doc.setFontSize(9);
+  doc.text(`Facture n° ${meta.numLabel} — Date d'émission : ${meta.dateEmission}`, 15, y);
+
+  y += 12;
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('Désignation', 15, y);
   doc.text('Date', 110, y);
@@ -5068,19 +5104,19 @@ async function openInvoice(entryId) {
     ? `Réglé${entry.paymentMethod ? ' — ' + paymentMethodLabel(entry.paymentMethod) : ''}`
     : 'À régler';
 
+  const businessContactLine = [settings.businessPhone, settings.businessEmail, settings.businessWebsite].filter(Boolean).join(' · ');
+
   document.getElementById('invoice-print-area').innerHTML = `
-    <div style="display:flex; align-items:center; gap:16px;">
+    <div style="display:flex; align-items:center; gap:20px;">
       ${TOUTOU_LOGO_SVG}
-      <div>
-        <h1 style="margin:0;">Facture n° ${numLabel}</h1>
-        <p style="margin:2px 0 0;">Date d'émission : ${dateEmission}</p>
-      </div>
+      <div style="font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1.7rem;">Toutou Crew</div>
     </div>
     <div style="display:flex; justify-content:space-between; margin-top:24px; gap:24px;">
       <div>
         <strong>${escapeHtml(settings.businessOwnerName || '')}${settings.businessOwnerName ? ' — EI' : ''}</strong><br>
         ${escapeHtml(settings.businessAddress || '')}<br>
         SIRET : ${escapeHtml(settings.businessSiret || '')}
+        ${businessContactLine ? '<br>' + escapeHtml(businessContactLine) : ''}
       </div>
       <div>
         <strong>Client</strong><br>
@@ -5089,6 +5125,7 @@ async function openInvoice(entryId) {
         ${clientCityLine ? escapeHtml(clientCityLine) : ''}
       </div>
     </div>
+    <p style="margin-top:16px; font-size:0.85rem;">Facture n° ${numLabel} — Date d'émission : ${dateEmission}</p>
     <table>
       <thead><tr><th>Désignation</th><th>Date</th><th>Qté</th><th style="text-align:right;">Prix unitaire</th></tr></thead>
       <tbody>
