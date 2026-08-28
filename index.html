@@ -5025,13 +5025,14 @@ async function buildInvoicePdfBlob(client, meta) {
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 15, 48);
+  doc.text(settings.businessOwnerName || '', 15, 48);
   doc.setFont('helvetica', 'normal');
-  const businessContactLine = [settings.businessPhone, settings.businessEmail, settings.businessWebsite].filter(Boolean).join(' · ');
   const vendorEndY = printLines(doc, [
     settings.businessAddress,
     settings.businessSiret ? `SIRET : ${settings.businessSiret}` : '',
-    businessContactLine,
+    settings.businessPhone ? `Téléphone : ${settings.businessPhone}` : '',
+    settings.businessEmail ? `Email : ${settings.businessEmail}` : '',
+    settings.businessWebsite ? `Site : ${settings.businessWebsite}` : '',
   ], 15, 53);
 
   doc.setFont('helvetica', 'bold');
@@ -5072,6 +5073,8 @@ async function buildInvoicePdfBlob(client, meta) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text("TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM", 15, y);
+  y += 5;
+  doc.text('Entreprise individuelle (EI)', 15, y);
   y += 6;
   doc.text(meta.paymentLine, 15, y);
 
@@ -5104,8 +5107,6 @@ async function openInvoice(entryId) {
     ? `Réglé${entry.paymentMethod ? ' — ' + paymentMethodLabel(entry.paymentMethod) : ''}`
     : 'À régler';
 
-  const businessContactLine = [settings.businessPhone, settings.businessEmail, settings.businessWebsite].filter(Boolean).join(' · ');
-
   document.getElementById('invoice-print-area').innerHTML = `
     <div style="display:flex; align-items:center; gap:20px;">
       ${TOUTOU_LOGO_SVG}
@@ -5113,10 +5114,12 @@ async function openInvoice(entryId) {
     </div>
     <div style="display:flex; justify-content:space-between; margin-top:24px; gap:24px;">
       <div>
-        <strong>${escapeHtml(settings.businessOwnerName || '')}${settings.businessOwnerName ? ' — EI' : ''}</strong><br>
+        <strong>${escapeHtml(settings.businessOwnerName || '')}</strong><br>
         ${escapeHtml(settings.businessAddress || '')}<br>
         SIRET : ${escapeHtml(settings.businessSiret || '')}
-        ${businessContactLine ? '<br>' + escapeHtml(businessContactLine) : ''}
+        ${settings.businessPhone ? '<br>Téléphone : ' + escapeHtml(settings.businessPhone) : ''}
+        ${settings.businessEmail ? '<br>Email : ' + escapeHtml(settings.businessEmail) : ''}
+        ${settings.businessWebsite ? '<br>Site : ' + escapeHtml(settings.businessWebsite) : ''}
       </div>
       <div>
         <strong>Client</strong><br>
@@ -5133,7 +5136,7 @@ async function openInvoice(entryId) {
       </tbody>
     </table>
     <div class="invoice-total">Total (TVA non applicable) : ${fmt(entry.amount)}</div>
-    <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM</p>
+    <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM<br>Entreprise individuelle (EI)</p>
     <p style="font-size:0.85rem;">${paymentLine}</p>
   `;
 
