@@ -5040,20 +5040,17 @@ async function buildInvoicePdfBlob(client, meta) {
   doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 195, 16, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
-  const businessContactLine = [
-    settings.businessEmail ? `Email : ${settings.businessEmail}` : '',
-    settings.businessPhone ? `Téléphone : ${settings.businessPhone}` : '',
-  ].filter(Boolean).join('   ·   ');
   const headerEndY = printLines(doc, [
     settings.businessAddress,
     businessCityLine,
     settings.businessSiret ? `N° SIRET : ${settings.businessSiret}` : '',
-    businessContactLine,
+    settings.businessEmail ? `Email : ${settings.businessEmail}` : '',
+    settings.businessPhone ? `Téléphone : ${settings.businessPhone}` : '',
     settings.businessWebsite ? `Site internet : ${settings.businessWebsite}` : '',
   ], 195, 21, 5, 'right');
 
   const ruleY = Math.max(headerEndY, 44) + 6;
-  doc.setDrawColor(217, 200, 163);
+  doc.setDrawColor(204, 204, 204);
   doc.line(15, ruleY, 195, ruleY);
 
   // Destinataire (gauche) / Facture n°, date (droite).
@@ -5102,19 +5099,13 @@ async function buildInvoicePdfBlob(client, meta) {
   doc.setTextColor(138, 131, 114);
   doc.text(`Prestation du ${meta.datePrestation}`, 15, y);
   doc.setTextColor(0, 0, 0);
-  y += 6;
-  doc.line(15, y, 195, y);
 
   // Total, aligné à droite.
-  y += 8;
+  y += 14;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Total', 150, y);
+  doc.text(`${meta.totalLabel} :`, 150, y);
   doc.text(meta.amountLabel, 195, y, { align: 'right' });
-  y += 6;
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(meta.paymentLine, 195, y, { align: 'right' });
 
   // Conditions générales.
   y += 16;
@@ -5149,15 +5140,11 @@ async function openInvoice(entryId) {
   const dateEmission = new Date(entry.invoiceDate + 'T00:00:00').toLocaleDateString('fr-FR');
   const datePrestation = new Date(entry.date + 'T00:00:00').toLocaleDateString('fr-FR');
   const designation = entry.formuleLabel || entry.note || 'Prestation de promenade / éducation canine';
-  const paymentLine = entry.paid !== false
-    ? `Réglé${entry.paymentMethod ? ' — ' + paymentMethodLabel(entry.paymentMethod) : ''}`
-    : 'À régler';
+  const totalLabel = entry.paid !== false
+    ? `Total réglé${entry.paymentMethod ? ' — ' + paymentMethodLabel(entry.paymentMethod) : ''}`
+    : 'Total à régler';
 
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
-  const businessContactLine = [
-    settings.businessEmail ? 'Email : ' + escapeHtml(settings.businessEmail) : '',
-    settings.businessPhone ? 'Téléphone : ' + escapeHtml(settings.businessPhone) : '',
-  ].filter(Boolean).join(' &nbsp;·&nbsp; ');
 
   document.getElementById('invoice-print-area').innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:24px;">
@@ -5167,12 +5154,13 @@ async function openInvoice(entryId) {
         ${escapeHtml(settings.businessAddress || '')}<br>
         ${businessCityLine ? escapeHtml(businessCityLine) + '<br>' : ''}
         N° SIRET : ${escapeHtml(settings.businessSiret || '')}
-        ${businessContactLine ? '<br>' + businessContactLine : ''}
+        ${settings.businessEmail ? '<br>Email : ' + escapeHtml(settings.businessEmail) : ''}
+        ${settings.businessPhone ? '<br>Téléphone : ' + escapeHtml(settings.businessPhone) : ''}
         ${settings.businessWebsite ? '<br>Site internet : ' + escapeHtml(settings.businessWebsite) : ''}
       </div>
     </div>
 
-    <hr style="margin:24px 0; border:none; border-top:1px solid #d9c8a3;">
+    <hr style="margin:24px 0; border:none; border-top:1px solid #ccc;">
 
     <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem;">
       <div>
@@ -5199,12 +5187,11 @@ async function openInvoice(entryId) {
       </tbody>
     </table>
 
-    <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-      <div style="width:220px; border-top:1px solid #d9c8a3; padding-top:8px; display:flex; justify-content:space-between; font-weight:700; font-size:1.05rem;">
-        <span>Total</span><span>${fmt(entry.amount)}</span>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; gap:16px; font-weight:700; font-size:1.05rem;">
+        <span>${totalLabel} :</span><span>${fmt(entry.amount)}</span>
       </div>
     </div>
-    <p style="text-align:right; font-size:0.85rem; margin-top:4px;">${paymentLine}</p>
 
     <div style="margin-top:32px; font-size:0.85rem;">
       <strong>Conditions générales</strong><br>
@@ -5213,7 +5200,7 @@ async function openInvoice(entryId) {
   `;
 
   try {
-    const pdfBlob = await buildInvoicePdfBlob(client, { numLabel, dateEmission, datePrestation, designation, amountLabel: fmt(entry.amount), paymentLine });
+    const pdfBlob = await buildInvoicePdfBlob(client, { numLabel, dateEmission, datePrestation, designation, amountLabel: fmt(entry.amount), totalLabel });
     const monthFolderId = await getInvoiceMonthFolderId(entry.invoiceDate);
     await uploadFileToDrive(pdfBlob, `Facture-${numLabel}.pdf`, 'application/pdf', monthFolderId);
   } catch (err) {
