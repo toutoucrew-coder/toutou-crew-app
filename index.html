@@ -821,10 +821,8 @@
       font-family: 'Inter', sans-serif;
       color: #000;
     }
-    .invoice-print-only h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; margin: 0 0 4px; }
-    .invoice-print-only table { width: 100%; border-collapse: collapse; margin: 24px 0; }
+    .invoice-print-only table { width: 100%; border-collapse: collapse; }
     .invoice-print-only th, .invoice-print-only td { text-align: left; padding: 8px 0; border-bottom: 1px solid #ccc; }
-    .invoice-print-only .invoice-total { text-align: right; font-weight: 700; font-size: 1.1rem; margin-top: 12px; }
   }
 
   .side-panel {
@@ -5016,11 +5014,11 @@ function logoSvgToPngDataUrl(size) {
 
 // Écrit une liste de lignes (en ignorant les lignes vides) les unes sous les
 // autres à partir de x/startY, et renvoie le y suivant la dernière ligne.
-function printLines(doc, lines, x, startY, lineHeight = 5) {
+function printLines(doc, lines, x, startY, lineHeight = 5, align = 'left') {
   let y = startY;
   lines.forEach(line => {
     if (!line) return;
-    doc.text(line, x, y);
+    doc.text(line, x, y, { align });
     y += lineHeight;
   });
   return y;
@@ -5036,59 +5034,95 @@ async function buildInvoicePdfBlob(client, meta) {
     doc.addImage(logoDataUrl, 'PNG', 15, 10, 28, 28);
   } catch { /* pas bloquant si le logo ne peut pas être rasterisé */ }
 
+  // Bloc coordonnées, aligné à droite, en face du logo.
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 15, 46);
+  doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 195, 16, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
-  const vendorEndY = printLines(doc, [
+  const businessContactLine = [
+    settings.businessEmail ? `Email : ${settings.businessEmail}` : '',
+    settings.businessPhone ? `Téléphone : ${settings.businessPhone}` : '',
+  ].filter(Boolean).join('   ·   ');
+  const headerEndY = printLines(doc, [
     settings.businessAddress,
     businessCityLine,
-    settings.businessSiret ? `SIRET : ${settings.businessSiret}` : '',
-    settings.businessPhone ? `Téléphone : ${settings.businessPhone}` : '',
-    settings.businessEmail ? `Email : ${settings.businessEmail}` : '',
-    settings.businessWebsite ? `Site : ${settings.businessWebsite}` : '',
-  ], 15, 51);
+    settings.businessSiret ? `N° SIRET : ${settings.businessSiret}` : '',
+    businessContactLine,
+    settings.businessWebsite ? `Site internet : ${settings.businessWebsite}` : '',
+  ], 195, 21, 5, 'right');
 
+  const ruleY = Math.max(headerEndY, 44) + 6;
+  doc.setDrawColor(217, 200, 163);
+  doc.line(15, ruleY, 195, ruleY);
+
+  // Destinataire (gauche) / Facture n°, date (droite).
+  let bodyY = ruleY + 10;
+  doc.setFontSize(9);
+  doc.setTextColor(138, 131, 114);
+  doc.text('Destinataire :', 15, bodyY);
+  doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.text(client ? client.ownerName : '', 90, 46);
+  doc.text(client ? client.ownerName : '', 15, bodyY + 5);
   doc.setFont('helvetica', 'normal');
   const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
   const clientEndY = printLines(doc, [
     client && client.address ? client.address : '',
     clientCityLine,
-  ], 90, 51);
+  ], 15, bodyY + 10);
 
-  let y = Math.max(vendorEndY, clientEndY) + 12;
-  doc.setFontSize(9);
-  doc.text(`Facture n° ${meta.numLabel} — Date d'émission : ${meta.dateEmission}`, 15, y);
+  doc.setTextColor(138, 131, 114);
+  doc.text('Facture :', 140, bodyY);
+  doc.text('Date de facture :', 140, bodyY + 5);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.text(meta.numLabel, 195, bodyY, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.text(meta.dateEmission, 195, bodyY + 5, { align: 'right' });
 
-  y += 12;
+  let y = Math.max(clientEndY, bodyY + 5) + 14;
+
+  // Tableau (une seule ligne de prestation).
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('Désignation', 15, y);
-  doc.text('Date', 110, y);
-  doc.text('Qté', 140, y);
-  doc.text('Prix unitaire', 160, y);
+  doc.text('Qté', 150, y, { align: 'right' });
+  doc.text('Prix', 172, y, { align: 'right' });
+  doc.text('Montant', 195, y, { align: 'right' });
   y += 2;
   doc.line(15, y, 195, y);
   y += 6;
   doc.setFont('helvetica', 'normal');
   doc.text(meta.designation, 15, y);
-  doc.text(meta.datePrestation, 110, y);
-  doc.text('1', 140, y);
-  doc.text(meta.amountLabel, 160, y);
-
-  y += 12;
-  doc.setFont('helvetica', 'bold');
-  doc.text(`Total : ${meta.amountLabel}`, 15, y);
-
-  y += 16;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text("TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM", 15, y);
+  doc.text('1', 150, y, { align: 'right' });
+  doc.text(meta.amountLabel, 172, y, { align: 'right' });
+  doc.text(meta.amountLabel, 195, y, { align: 'right' });
+  y += 5;
+  doc.setFontSize(8);
+  doc.setTextColor(138, 131, 114);
+  doc.text(`Prestation du ${meta.datePrestation}`, 15, y);
+  doc.setTextColor(0, 0, 0);
   y += 6;
-  doc.text(meta.paymentLine, 15, y);
+  doc.line(15, y, 195, y);
+
+  // Total, aligné à droite.
+  y += 8;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total', 150, y);
+  doc.text(meta.amountLabel, 195, y, { align: 'right' });
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(meta.paymentLine, 195, y, { align: 'right' });
+
+  // Conditions générales.
+  y += 16;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Conditions générales', 15, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.text("TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM", 15, y);
 
   return doc.output('blob');
 }
@@ -5119,36 +5153,63 @@ async function openInvoice(entryId) {
     ? `Réglé${entry.paymentMethod ? ' — ' + paymentMethodLabel(entry.paymentMethod) : ''}`
     : 'À régler';
 
+  const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
+  const businessContactLine = [
+    settings.businessEmail ? 'Email : ' + escapeHtml(settings.businessEmail) : '',
+    settings.businessPhone ? 'Téléphone : ' + escapeHtml(settings.businessPhone) : '',
+  ].filter(Boolean).join(' &nbsp;·&nbsp; ');
+
   document.getElementById('invoice-print-area').innerHTML = `
-    <div style="margin-bottom:16px;">
-      ${TOUTOU_LOGO_SVG}
-    </div>
-    <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem; margin-right:120px;">
-      <div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:24px;">
+      <div>${TOUTOU_LOGO_SVG}</div>
+      <div style="text-align:right; font-size:0.85rem;">
         <strong>${escapeHtml(settings.businessOwnerName || '')}${settings.businessOwnerName ? ' — EI' : ''}</strong><br>
         ${escapeHtml(settings.businessAddress || '')}<br>
-        ${[settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ') ? escapeHtml([settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ')) + '<br>' : ''}
-        SIRET : ${escapeHtml(settings.businessSiret || '')}
-        ${settings.businessPhone ? '<br>Téléphone : ' + escapeHtml(settings.businessPhone) : ''}
-        ${settings.businessEmail ? '<br>Email : ' + escapeHtml(settings.businessEmail) : ''}
-        ${settings.businessWebsite ? '<br>Site : ' + escapeHtml(settings.businessWebsite) : ''}
+        ${businessCityLine ? escapeHtml(businessCityLine) + '<br>' : ''}
+        N° SIRET : ${escapeHtml(settings.businessSiret || '')}
+        ${businessContactLine ? '<br>' + businessContactLine : ''}
+        ${settings.businessWebsite ? '<br>Site internet : ' + escapeHtml(settings.businessWebsite) : ''}
       </div>
+    </div>
+
+    <hr style="margin:24px 0; border:none; border-top:1px solid #d9c8a3;">
+
+    <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem;">
       <div>
+        <div style="color:#8a8372; margin-bottom:4px;">Destinataire :</div>
         <strong>${client ? escapeHtml(client.ownerName) : ''}</strong><br>
         ${client && client.address ? escapeHtml(client.address) + '<br>' : ''}
         ${clientCityLine ? escapeHtml(clientCityLine) : ''}
       </div>
+      <div style="min-width:200px;">
+        <div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:#8a8372;">Facture :</span><strong>${numLabel}</strong></div>
+        <div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:#8a8372;">Date de facture :</span><span>${dateEmission}</span></div>
+      </div>
     </div>
-    <p style="margin-top:40px; font-size:0.85rem;">Facture n° ${numLabel} — Date d'émission : ${dateEmission}</p>
-    <table>
-      <thead><tr><th>Désignation</th><th>Date</th><th>Qté</th><th style="text-align:right;">Prix unitaire</th></tr></thead>
+
+    <table style="margin-top:24px;">
+      <thead><tr><th>Désignation</th><th style="text-align:right;">Qté</th><th style="text-align:right;">Prix</th><th style="text-align:right;">Montant</th></tr></thead>
       <tbody>
-        <tr><td>${escapeHtml(designation)}</td><td>${datePrestation}</td><td>1</td><td style="text-align:right;">${fmt(entry.amount)}</td></tr>
+        <tr>
+          <td>${escapeHtml(designation)}<br><span style="color:#8a8372; font-size:0.78rem;">Prestation du ${datePrestation}</span></td>
+          <td style="text-align:right;">1</td>
+          <td style="text-align:right;">${fmt(entry.amount)}</td>
+          <td style="text-align:right;">${fmt(entry.amount)}</td>
+        </tr>
       </tbody>
     </table>
-    <div class="invoice-total">Total : ${fmt(entry.amount)}</div>
-    <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM</p>
-    <p style="font-size:0.85rem;">${paymentLine}</p>
+
+    <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+      <div style="width:220px; border-top:1px solid #d9c8a3; padding-top:8px; display:flex; justify-content:space-between; font-weight:700; font-size:1.05rem;">
+        <span>Total</span><span>${fmt(entry.amount)}</span>
+      </div>
+    </div>
+    <p style="text-align:right; font-size:0.85rem; margin-top:4px;">${paymentLine}</p>
+
+    <div style="margin-top:32px; font-size:0.85rem;">
+      <strong>Conditions générales</strong><br>
+      TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM
+    </div>
   `;
 
   try {
