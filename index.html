@@ -5081,7 +5081,7 @@ async function buildInvoicePdfBlob(client, meta) {
 
   y += 12;
   doc.setFont('helvetica', 'bold');
-  doc.text(`Total (TVA non applicable) : ${meta.amountLabel}`, 15, y);
+  doc.text(`Total : ${meta.amountLabel}`, 15, y);
 
   y += 16;
   doc.setFont('helvetica', 'normal');
@@ -5146,7 +5146,7 @@ async function openInvoice(entryId) {
         <tr><td>${escapeHtml(designation)}</td><td>${datePrestation}</td><td>1</td><td style="text-align:right;">${fmt(entry.amount)}</td></tr>
       </tbody>
     </table>
-    <div class="invoice-total">Total (TVA non applicable) : ${fmt(entry.amount)}</div>
+    <div class="invoice-total">Total : ${fmt(entry.amount)}</div>
     <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM</p>
     <p style="font-size:0.85rem;">${paymentLine}</p>
   `;
