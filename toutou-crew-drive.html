@@ -5036,7 +5036,7 @@ async function buildInvoicePdfBlob(client, meta) {
     doc.addImage(logoDataUrl, 'PNG', 15, 10, 28, 28);
   } catch { /* pas bloquant si le logo ne peut pas être rasterisé */ }
 
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('Toutou Crew', 15, 46);
   doc.text(settings.businessOwnerName || '', 15, 51);
@@ -5127,7 +5127,7 @@ async function openInvoice(entryId) {
     <div style="margin-bottom:16px;">
       ${TOUTOU_LOGO_SVG}
     </div>
-    <div style="display:flex; justify-content:space-between; gap:24px;">
+    <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem;">
       <div>
         <strong>Toutou Crew</strong><br>
         <strong>${escapeHtml(settings.businessOwnerName || '')}</strong><br>
