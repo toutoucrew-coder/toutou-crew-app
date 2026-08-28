@@ -636,7 +636,9 @@
     padding: 5px 12px;
     font-size: 0.82rem;
     margin: 0 6px 6px 0;
+    cursor: pointer;
   }
+  .planning-client-chip:hover { border-color: var(--accent); color: var(--accent); }
   .planning-client-chip.trial {
     background: rgba(230, 116, 63, 0.15);
     border: 1px solid #e6743f;
@@ -3020,7 +3022,7 @@ function renderWeekView() {
       .sort((a, b) => perDogLabel(a.client, a.dog).localeCompare(perDogLabel(b.client, b.dog)));
     const isToday = dateStr === todayStr;
     const chipsHtml = pairs.length > 0
-      ? pairs.map(({ client, dog, kind }) => `<span class="planning-client-chip${kind === 'test' ? ' trial' : ''}">${escapeHtml(perDogLabel(client, dog))}</span>`).join('')
+      ? pairs.map(({ client, dog, kind }) => `<span class="planning-client-chip${kind === 'test' ? ' trial' : ''}" data-client-id="${client.id}">${escapeHtml(perDogLabel(client, dog))}</span>`).join('')
       : '<div class="empty" style="padding:16px;">Aucun chien ce jour-là.</div>';
     return `
       <div class="planning-day-card${isToday ? ' planning-day-today' : ''}">
@@ -3038,6 +3040,11 @@ function renderPlanning() {
   renderWeekView();
   renderTrialWalks();
 }
+
+document.getElementById('week-view-list').addEventListener('click', (ev) => {
+  const chip = ev.target.closest('.planning-client-chip');
+  if (chip) openClientDetail(chip.dataset.clientId);
+});
 
 function renderTrialWalks() {
   const container = document.getElementById('planning-trials');
