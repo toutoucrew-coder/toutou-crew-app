@@ -5140,9 +5140,7 @@ async function openInvoice(entryId) {
   const dateEmission = new Date(entry.invoiceDate + 'T00:00:00').toLocaleDateString('fr-FR');
   const datePrestation = new Date(entry.date + 'T00:00:00').toLocaleDateString('fr-FR');
   const designation = entry.formuleLabel || entry.note || 'Prestation de promenade / éducation canine';
-  const totalLabel = entry.paid !== false
-    ? `Total réglé${entry.paymentMethod ? ' — ' + paymentMethodLabel(entry.paymentMethod) : ''}`
-    : 'Total à régler';
+  const totalLabel = 'Total';
 
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
 
