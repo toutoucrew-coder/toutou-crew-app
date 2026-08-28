@@ -4513,12 +4513,19 @@ document.getElementById('confirm-renewal').addEventListener('click', async () =>
     }
     if (clientsChanged) await saveClients();
 
+    btn.textContent = 'Génération des factures...';
+    const failedInvoices = await generateInvoicesForMonth(activeMonth);
+
     if (!settings.closedMonths.includes(activeMonth)) settings.closedMonths.push(activeMonth);
     settings.activeMonth = upcomingMonth;
     await saveSettings();
 
     closeClosureModal();
     render();
+
+    if (failedInvoices.length > 0) {
+      alert(`Le mois est clôturé, mais ${failedInvoices.length} facture(s) n'ont pas pu être sauvegardées sur Drive. Tu peux les régénérer individuellement depuis "Ce mois" ou "Historique".`);
+    }
   } catch (err) {
     console.error('Échec de la clôture', err);
     errorBox.textContent = 'Erreur lors de la clôture : ' + (err && err.message ? err.message : String(err));
@@ -5125,6 +5132,53 @@ async function buildInvoicePdfBlob(client, meta) {
   return doc.output('blob');
 }
 
+// Attribue (une seule fois, numérotation continue) puis renvoie les infos de
+// facturation d'un encaissement — réutilisé par l'ouverture manuelle d'une
+// facture et par la génération groupée à la clôture du mois.
+async function ensureInvoiceMeta(entry) {
+  if (!entry.invoiceNumber) {
+    entry.invoiceNumber = settings.nextInvoiceNumber || 1;
+    entry.invoiceDate = todayISO();
+    settings.nextInvoiceNumber = (settings.nextInvoiceNumber || 1) + 1;
+    await saveEntries();
+    await saveSettings();
+  }
+  return {
+    numLabel: String(entry.invoiceNumber).padStart(4, '0'),
+    dateEmission: new Date(entry.invoiceDate + 'T00:00:00').toLocaleDateString('fr-FR'),
+    datePrestation: new Date(entry.date + 'T00:00:00').toLocaleDateString('fr-FR'),
+    designation: entry.formuleLabel || entry.note || 'Prestation de promenade / éducation canine',
+    totalLabel: 'Total',
+  };
+}
+
+// Construit le PDF d'un encaissement et le sauvegarde (ou remplace) sur
+// Drive, sans toucher à l'aperçu imprimable à l'écran.
+async function uploadInvoicePdfToDrive(entry, client, meta) {
+  const pdfBlob = await buildInvoicePdfBlob(client, { ...meta, amountLabel: pdfSafeText(fmt(entry.amount)) });
+  const monthFolderId = await getInvoiceMonthFolderId(entry.invoiceDate);
+  await uploadFileToDrive(pdfBlob, `Facture-${meta.numLabel}.pdf`, 'application/pdf', monthFolderId);
+}
+
+// Génère/actualise sur Drive les factures de tous les encaissements d'un mois
+// donné (appelé à la clôture du mois). Ne bloque pas sur les échecs
+// individuels — renvoie la liste des encaissements en échec, le cas échéant.
+async function generateInvoicesForMonth(monthKey) {
+  const monthEntries = entries.filter(e => e.date.slice(0, 7) === monthKey);
+  const failed = [];
+  for (const entry of monthEntries) {
+    try {
+      const client = entry.clientId ? getClientById(entry.clientId) : null;
+      const meta = await ensureInvoiceMeta(entry);
+      await uploadInvoicePdfToDrive(entry, client, meta);
+    } catch (err) {
+      console.error('Échec de la génération de facture pour un encaissement', entry.id, err);
+      failed.push(entry);
+    }
+  }
+  return failed;
+}
+
 // Génération de facture (impression + sauvegarde d'un PDF sur Drive, rangé
 // dans Factures/AAAA/MM - Mois) pour un encaissement.
 // Le n° de facture est attribué une seule fois (numérotation continue) et
@@ -5134,20 +5188,8 @@ async function openInvoice(entryId) {
   if (!entry) return;
   const client = entry.clientId ? getClientById(entry.clientId) : null;
   const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
-
-  if (!entry.invoiceNumber) {
-    entry.invoiceNumber = settings.nextInvoiceNumber || 1;
-    entry.invoiceDate = todayISO();
-    settings.nextInvoiceNumber = (settings.nextInvoiceNumber || 1) + 1;
-    await saveEntries();
-    await saveSettings();
-  }
-
-  const numLabel = String(entry.invoiceNumber).padStart(4, '0');
-  const dateEmission = new Date(entry.invoiceDate + 'T00:00:00').toLocaleDateString('fr-FR');
-  const datePrestation = new Date(entry.date + 'T00:00:00').toLocaleDateString('fr-FR');
-  const designation = entry.formuleLabel || entry.note || 'Prestation de promenade / éducation canine';
-  const totalLabel = 'Total';
+  const meta = await ensureInvoiceMeta(entry);
+  const { numLabel, dateEmission, datePrestation, designation, totalLabel } = meta;
 
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
 
@@ -5205,9 +5247,7 @@ async function openInvoice(entryId) {
   `;
 
   try {
-    const pdfBlob = await buildInvoicePdfBlob(client, { numLabel, dateEmission, datePrestation, designation, amountLabel: pdfSafeText(fmt(entry.amount)), totalLabel });
-    const monthFolderId = await getInvoiceMonthFolderId(entry.invoiceDate);
-    await uploadFileToDrive(pdfBlob, `Facture-${numLabel}.pdf`, 'application/pdf', monthFolderId);
+    await uploadInvoicePdfToDrive(entry, client, meta);
   } catch (err) {
     console.error('Échec de la sauvegarde de la facture sur Drive', err);
     alert("La facture s'est ouverte mais n'a pas pu être sauvegardée sur Drive : " + err.message);
