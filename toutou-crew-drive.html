@@ -5051,13 +5051,13 @@ async function buildInvoicePdfBlob(client, meta) {
   ], 15, 51);
 
   doc.setFont('helvetica', 'bold');
-  doc.text(client ? client.ownerName : '', 120, 46);
+  doc.text(client ? client.ownerName : '', 90, 46);
   doc.setFont('helvetica', 'normal');
   const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
   const clientEndY = printLines(doc, [
     client && client.address ? client.address : '',
     clientCityLine,
-  ], 120, 51);
+  ], 90, 51);
 
   let y = Math.max(vendorEndY, clientEndY) + 12;
   doc.setFontSize(9);
@@ -5123,7 +5123,7 @@ async function openInvoice(entryId) {
     <div style="margin-bottom:16px;">
       ${TOUTOU_LOGO_SVG}
     </div>
-    <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem;">
+    <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem; margin-right:120px;">
       <div>
         <strong>${escapeHtml(settings.businessOwnerName || '')}${settings.businessOwnerName ? ' — EI' : ''}</strong><br>
         ${escapeHtml(settings.businessAddress || '')}<br>
