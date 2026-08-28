@@ -1,0 +1,4559 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toutou Crew — Finances</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2e9d8;
+    --surface: #faf3e6;
+    --surface-2: #ede1c9;
+    --line: #d9c8a3;
+    --accent: #4a9cf1;
+    --accent-soft: #2f6fb8;
+    --text: #44413a;
+    --text-dim: #8a8372;
+    --positive: #3f7a3d;
+    --warning: #b9432f;
+    --btn-text: #ffffff;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 28px 18px 60px; }
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .app-brand {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .app-logo { width: 84px; height: 84px; flex-shrink: 0; }
+  .app-brand-text { min-width: 0; }
+  .app-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .page-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 18px;
+  }
+  .page-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .page-title-row .page-title { margin-bottom: 0; }
+  .page-title-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .add-btn-inline, .closure-btn-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-btn-inline svg, .closure-btn-inline svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .add-btn-inline {
+    background: var(--accent);
+    color: var(--btn-text);
+    border: none;
+  }
+  .add-btn-inline:hover { background: var(--accent-soft); }
+  .closure-btn-inline {
+    background: var(--surface);
+    color: var(--accent-soft);
+    border: 1px solid var(--accent-soft);
+  }
+  .closure-btn-inline:hover { background: var(--surface-2); }
+  .app-subtitle {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-top: 2px;
+  }
+
+  .hamburger-btn {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    width: 38px; height: 38px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .hamburger-btn span {
+    display: block;
+    width: 18px; height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  .hamburger-btn.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .hamburger-btn.open span:nth-child(2) { opacity: 0; }
+  .hamburger-btn.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* Nav horizontale (pill tabs) par défaut, façon site */
+  .tabs {
+    display: flex;
+    gap: 32px;
+  }
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #44413a;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .tab-icon { width: 20px; height: 20px; flex-shrink: 0; }
+  .tab:hover { color: #4a9cf1; background: #ebf3fc; }
+  .tab.active {
+    color: #44413a;
+    font-weight: 600;
+    position: relative;
+  }
+  .tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* En dessous de 480px : la nav devient un menu déroulant déclenché par le burger */
+  @media (max-width: 480px) {
+    .hamburger-btn { display: flex; }
+    .tabs {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      left: 0;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 14px;
+      z-index: 15;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .tabs.mobile-open { display: flex; }
+    .tab.active::after { display: none; }
+    .tab {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 10px;
+      text-align: left;
+      padding: 10px 4px;
+    }
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade 0.25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
+
+  .subtabs {
+    display: flex;
+    gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 18px;
+  }
+  .subtab {
+    flex: 1;
+    text-align: center;
+    padding: 7px 8px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #44413a;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+  }
+  .subtab:hover {
+    color: #4a9cf1;
+    background: #ebf3fc;
+    border-color: transparent;
+  }
+  .subtab.active {
+    background: #ebf3fc;
+    color: #4a9cf1;
+    border-color: #4a9cf1;
+    font-weight: 600;
+  }
+  .subpanel { display: none; }
+  .subpanel.active { display: block; animation: fade 0.25s ease; }
+
+  .add-client-btn {
+    background: var(--accent);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: 14px;
+    width: 100%;
+  }
+  .add-client-btn:hover { background: var(--accent-soft); }
+  .sticky-add-client-btn {
+    position: sticky;
+    bottom: 12px;
+    margin-top: 16px;
+    margin-bottom: 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  }
+
+  .renewal-btn {
+    background: var(--surface);
+    color: var(--accent-soft);
+    border: 1px solid var(--accent-soft);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: 18px;
+    width: 100%;
+  }
+  .renewal-btn:hover { background: var(--surface-2); }
+
+  .renewal-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .renewal-row input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .renewal-row .renewal-info { flex: 1; min-width: 0; }
+  .renewal-row .renewal-name { font-weight: 600; font-size: 0.88rem; }
+  .renewal-row .renewal-meta { font-size: 0.75rem; color: var(--text-dim); }
+  .renewal-row .renewal-amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .renewal-summary {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin: 10px 0 16px;
+    text-align: center;
+  }
+
+  .renewal-row-detailed {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .renewal-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .renewal-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+  }
+  .renewal-checkbox-label .renewal-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .renewal-checkbox-label input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .renewal-checkbox-label .renewal-name { font-weight: 600; font-size: 0.88rem; }
+  .renewal-row-top .renewal-amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 72px;
+    text-align: right;
+  }
+  .renewal-expand-toggle {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .renewal-expand-toggle.expanded { transform: rotate(180deg); }
+  .renewal-edit-fields {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .renewal-edit-fields select,
+  .renewal-edit-fields input {
+    padding: 8px 9px;
+    font-size: 0.82rem;
+  }
+  .renewal-days-groups .walk-day-group { margin-bottom: 8px; }
+  .renewal-days-groups .walk-day-group label { font-size: 0.78rem; }
+
+  .client-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .client-summary-row:hover { border-color: var(--accent-soft); }
+  .client-summary-name { font-weight: 600; font-size: 0.9rem; }
+  .client-summary-status { font-size: 0.76rem; color: var(--text-dim); margin-top: 2px; text-transform: capitalize; }
+
+  .day-chips { display: flex; gap: 5px; }
+  .day-chip {
+    flex: 1;
+    text-align: center;
+    padding: 6px 0;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .day-chip.active {
+    background: var(--accent);
+    color: var(--btn-text);
+    border-color: var(--accent);
+  }
+
+  .dog-chip {
+    flex: none;
+    padding: 7px 14px;
+  }
+  .dog-chip-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+
+  .walk-day-group { margin-bottom: 14px; }
+  .walk-day-group:last-child { margin-bottom: 0; }
+  .walk-day-group label { font-size: 0.85rem; }
+
+  .dog-detail-card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .dog-detail-card input { margin-bottom: 8px; }
+  .dog-detail-status { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 10px; }
+  .dog-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .dog-target-radio {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .dog-target-radio input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .dog-formule-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .dog-formule-row {
+    display: flex;
+    gap: 10px;
+  }
+  .dog-formule-row > div { flex: 1; min-width: 0; }
+  .dog-formule-apply-btn { width: 100%; margin-top: 8px; }
+  .dog-formule-note {
+    background: rgba(230, 116, 63, 0.12);
+    border: 1px solid #e6743f;
+    color: #e6743f;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+  .dog-photo-picker {
+    width: 56px; height: 56px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .dog-photo-picker img { width: 100%; height: 100%; object-fit: cover; }
+  .dog-photo-placeholder { font-size: 1.3rem; opacity: 0.5; }
+  .dog-detail-fields { flex: 1; min-width: 0; }
+  .dog-detail-fields .cd-dog-name-input { margin-bottom: 6px; }
+  .whatsapp-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px; height: 38px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: rgba(37, 211, 102, 0.14);
+    border: 1px solid #25d366;
+    color: #1da851;
+    cursor: pointer;
+    padding: 0;
+  }
+  .whatsapp-btn svg { width: 18px; height: 18px; }
+  .whatsapp-btn:hover { background: rgba(37, 211, 102, 0.24); }
+  .whatsapp-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .dog-photo-remove {
+    background: none;
+    border: none;
+    color: var(--warning);
+    font-size: 0.75rem;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .day-view-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .day-view-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .day-view-nav button {
+    width: 34px; height: 34px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+  .day-view-date-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-align: center;
+    flex: 1;
+  }
+  .day-view-today-btn {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .planning-day-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .planning-day-today {
+    border-color: #4a9cf1;
+    background: #ebf3fc;
+  }
+  .planning-day-header {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .planning-day-header .count { font-size: 0.75rem; color: var(--text-dim); font-weight: 500; }
+  .planning-client-chip {
+    display: inline-flex;
+    align-items: center;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
+    margin: 0 6px 6px 0;
+  }
+  .planning-client-chip.trial {
+    background: rgba(230, 116, 63, 0.15);
+    border: 1px solid #e6743f;
+    color: #e6743f;
+    font-weight: 600;
+  }
+
+
+  .trial-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(230, 116, 63, 0.1);
+    border: 1px solid #e6743f;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+  }
+  .trial-row .trial-name { font-weight: 600; color: #e6743f; }
+  .trial-row .trial-date { font-size: 0.8rem; color: var(--text-dim); text-transform: capitalize; }
+
+  /* Dog-tag summary card */
+  .tag-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 26px 22px 22px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .tag-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .tag-top-left { min-width: 0; }
+  .tag-month-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .tag-label { color: var(--text-dim); font-size: 0.82rem; font-weight: 500; margin-bottom: 0; }
+  .tag-amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #e6743f;
+    line-height: 1.1;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tag-sub { font-size: 0.8rem; color: var(--text-dim); margin-top: 6px; }
+
+  @media (max-width: 380px) {
+    .tag-top-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .tag-amount { text-align: left; }
+    .entry-row-top { flex-direction: column; align-items: flex-start; gap: 2px; }
+  }
+
+  .panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 20;
+  }
+  .panel-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 30;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.96);
+    width: min(420px, 90vw);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 31;
+  }
+  #client-detail-modal { width: min(600px, 94vw); }
+  .modal.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .modal-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  .modal-text {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  #client-changes-summary {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  #client-changes-summary div { margin-bottom: 4px; }
+  #client-changes-summary div:last-child { margin-bottom: 0; }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .modal-btn {
+    flex: 1;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    border: 1px solid var(--line);
+  }
+  .modal-btn.primary {
+    background: var(--accent);
+    color: var(--btn-text);
+    border: none;
+  }
+  .modal-btn.primary:hover { background: var(--accent-soft); }
+  .modal-btn.secondary {
+    background: none;
+    color: var(--text-dim);
+  }
+  .modal-btn.secondary:hover { color: var(--warning); border-color: var(--warning); }
+
+  .side-panel {
+    position: fixed;
+    top: 0; right: 0;
+    height: 100%;
+    width: min(380px, 88vw);
+    background: var(--surface);
+    border-left: 1px solid var(--line);
+    padding: 20px;
+    transform: translateX(100%);
+    transition: transform 0.28s ease;
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+  }
+  .side-panel.open { transform: translateX(0); }
+  .side-panel .entry-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .entry-form-fields {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 2px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .entry-form-submit {
+    flex-shrink: 0;
+    width: 100%;
+  }
+  .side-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .side-panel-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+  .side-panel-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text-dim);
+    width: 30px; height: 30px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .side-panel-close:hover { color: var(--warning); border-color: var(--warning); }
+
+  .tag-card-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 18px 0 16px;
+  }
+  .page-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 24px 0;
+  }
+  .goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .goal-header .goal-title { font-size: 0.85rem; font-weight: 600; }
+  .goal-header .goal-count { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-dim); }
+  .goal-header .goal-count strong { color: #e6743f; font-size: 1rem; }
+
+  .grid-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .breakdown-frame {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px 14px;
+    margin-bottom: 0;
+  }
+  .breakdown-frame-spaced { margin-top: 20px; }
+  .breakdown-frame .breakdown-row:last-of-type { border-bottom: none; }
+  .breakdown-ca-group {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+  }
+  .breakdown-ca-group .breakdown-row { border-bottom: none; padding-bottom: 4px; }
+  .breakdown-ca-group .note { padding: 0 0 8px; }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.9rem;
+  }
+  .breakdown-row:last-of-type { border-bottom: none; }
+  .breakdown-row.breakdown-no-border { border-bottom: none; }
+  .breakdown-subrow {
+    padding: 4px 0 4px 14px;
+    border-bottom: none;
+    font-size: 0.78rem;
+  }
+  .breakdown-subrow-last { border-bottom: 1px solid var(--line) !important; padding-bottom: 11px; margin-bottom: 4px; }
+  .breakdown-subrow-endcap { padding-bottom: 11px; }
+  .breakdown-subrow .breakdown-label { color: var(--text-dim); }
+  .breakdown-subrow .breakdown-val { font-size: 0.8rem; color: var(--text-dim); }
+  .breakdown-label small { color: var(--text-dim); font-size: 0.72rem; display: block; margin-top: 2px; }
+  .breakdown-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .breakdown-val.money-out { color: #c2593f; }
+  .breakdown-val.money-in { color: #6fae6c; }
+  .breakdown-divider { height: 1px; background: var(--line); margin: 2px 0; }
+  .breakdown-row.total {
+    border-bottom: none;
+    padding-top: 13px;
+  }
+  .breakdown-row.total .breakdown-label { font-weight: 700; }
+  .breakdown-row.total .breakdown-val { font-size: 1.1rem; color: #e6743f; }
+
+  .mini-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .mini-card .lbl { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .mini-card .val { font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 600; }
+  .mini-card .val.pos { color: var(--positive); }
+  .mini-card .val.warn { color: var(--warning); }
+
+  .section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 24px 0 12px;
+  }
+
+  form.entry-form {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  form.entry-form .full { grid-column: 1 / -1; }
+  .client-fields-card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  #second-dog-section { margin-top: 10px; }
+  label { font-size: 0.78rem; color: var(--text-dim); display: block; margin-bottom: 4px; }
+  .recap-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 9px 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  input, select {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 9px 10px;
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    background: var(--accent);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: var(--accent-soft); }
+  button:disabled, button:disabled:hover {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+  }
+  button.ghost:hover { color: var(--warning); border-color: var(--warning); background: transparent; }
+
+  .entry-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .entry-row-photo {
+    width: 52px;
+    aspect-ratio: 1 / 1;
+    align-self: center;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: var(--surface-2);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .entry-row-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .entry-row-photo-placeholder { font-size: 1.3rem; opacity: 0.4; }
+  .entry-row-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+  }
+  .entry-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .entry-row-title {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .entry-row .entry-date {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .entry-row .client-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text);
+    min-width: 0;
+  }
+  .entry-row .amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .entry-row-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .entry-row .meta { font-size: 0.78rem; color: var(--text-dim); }
+  .entry-row .row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .entry-row .del {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0 4px;
+  }
+  .entry-row-del-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .paid-toggle {
+    display: inline-block;
+    border: none;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .paid-toggle.paid { background: rgba(63, 122, 61, 0.15); color: var(--positive); }
+  .paid-toggle.pending { background: rgba(230, 116, 63, 0.15); color: #e6743f; }
+  .entry-row .del:hover { color: var(--warning); }
+
+  .empty {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    padding: 30px 10px;
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+  }
+  #form-error, #renewal-error {
+    background: rgba(185, 67, 47, 0.12);
+    border: 1px solid rgba(185, 67, 47, 0.4);
+    color: var(--warning);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+  }
+
+  #f-formule-note, #single-dog-locked-note {
+    background: rgba(230, 116, 63, 0.12);
+    border: 1px solid #e6743f;
+    color: #e6743f;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-top: 6px;
+  }
+
+  .month-group { margin-bottom: 18px; }
+
+  .unpaid-total-banner {
+    background: rgba(230, 116, 63, 0.12);
+    border: 1px solid #e6743f;
+    color: #e6743f;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .unpaid-client-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .unpaid-client-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  .unpaid-client-name { font-weight: 600; font-size: 0.9rem; }
+  .unpaid-client-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #e6743f;
+    white-space: nowrap;
+  }
+  .unpaid-client-detail {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    display: none;
+  }
+  .unpaid-entry-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    padding: 4px 0;
+    color: var(--text-dim);
+  }
+  .unpaid-entry-line .unpaid-entry-amount { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+  .unpaid-entry-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .unpaid-age-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .unpaid-age-badge.age-recent { background: var(--surface-2); color: var(--text-dim); }
+  .unpaid-age-badge.age-warn { background: rgba(230, 116, 63, 0.15); color: #e6743f; }
+  .unpaid-age-badge.age-late { background: rgba(194, 89, 63, 0.18); color: #c2593f; }
+  .month-header {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    color: var(--accent-soft);
+  }
+
+  .settings-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .settings-row label { margin-bottom: 8px; }
+  .tariff-sub-label { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 4px; }
+  .tariff-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+  }
+  .tariff-col-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-soft);
+    margin-bottom: 8px;
+  }
+  .tariff-columns label { font-size: 0.72rem; margin-bottom: 3px; }
+  .tariff-columns input { margin-bottom: 8px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+  .switch {
+    position: relative;
+    width: 42px; height: 24px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .switch.on { background: var(--accent); }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: var(--text);
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .switch.on::after { transform: translateX(18px); background: var(--btn-text); }
+
+  .progress-bar {
+    height: 8px;
+    background: var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill { height: 100%; background: #e6743f; border-radius: 999px; transition: width 0.3s; }
+
+  .note {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+  .disclaimer {
+    margin-top: 24px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .disclaimer strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app-header">
+    <div class="app-brand">
+      <svg class="app-logo" width="146" height="146" viewBox="0 0 146 146" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M87.1898 89.8846C83.5304 92.6289 74.382 92.6288 63.8613 90.7993C65.691 97.3551 70.7226 105.161 72.5523 104.063C74.8394 102.691 90.8492 87.1403 87.1898 89.8846Z" fill="#ED7E47"/>
+        <path d="M77.5665 79.135C80.3765 79.135 82.6545 76.1929 82.6545 72.5636C82.6545 68.9343 80.3765 65.9922 77.5665 65.9922C74.7565 65.9922 72.4785 68.9343 72.4785 72.5636C72.4785 76.1929 74.7565 79.135 77.5665 79.135Z" fill="white"/>
+        <path d="M62.3027 72.5636C62.3027 76.1902 64.4878 79.135 67.186 79.135C69.8843 79.135 72.0547 76.2337 72.0547 72.5636C72.0547 68.8935 69.9137 65.9922 67.186 65.9922C64.4584 65.9922 62.3027 68.937 62.3027 72.5636Z" fill="white"/>
+        <path d="M82.667 41.4023C81.4178 41.4023 82.667 57.0431 82.667 57.0431C81.6369 56.7407 80.5825 56.5283 79.5157 56.4084C77.1994 50.0377 70.5371 41.4023 69.5471 41.4023C68.557 41.4023 69.5471 58.1297 69.5471 58.1297C66.4541 59.6238 63.8441 61.958 62.0155 64.8655C60.1869 67.7731 59.2135 71.1365 59.2067 74.5711H51.3255C50.8498 74.5655 50.3796 74.6739 49.9543 74.8871C49.5291 75.1004 49.161 75.4124 48.8811 75.7971C48.6011 76.1817 48.4173 76.6278 48.3451 77.0981C48.2729 77.5683 48.3143 78.049 48.4659 78.4999C51.4056 86.7235 63.2845 92.8711 77.4968 92.8711C79.9002 92.8711 82.2801 92.3978 84.5005 91.4781C86.721 90.5585 88.7385 89.2105 90.438 87.5112C92.1375 85.8119 93.4855 83.7945 94.4053 81.5742C95.325 79.354 95.7984 76.9743 95.7984 74.5711C95.787 60.2742 83.9162 41.4023 82.667 41.4023ZM66.7961 78.3741C64.4798 78.3741 62.5925 75.8064 62.5925 72.6553C62.5925 69.5043 64.4798 66.9366 66.7961 66.9366C69.1124 66.9366 70.9997 69.5043 70.9997 72.6553C70.9997 75.8064 69.1181 78.3741 66.7961 78.3741ZM77.5597 78.3741C75.2377 78.3741 73.3561 75.8064 73.3561 72.6553C73.3561 69.5043 75.2377 66.9366 77.5597 66.9366C79.8817 66.9366 81.7748 69.4814 81.7748 72.6439C81.7748 75.8064 79.8817 78.3741 77.5597 78.3741Z" fill="#44413A"/>
+        <path d="M79.4671 75.2339C80.5158 75.2339 81.3659 74.0741 81.3659 72.6433C81.3659 71.2126 80.5158 70.0527 79.4671 70.0527C78.4185 70.0527 77.5684 71.2126 77.5684 72.6433C77.5684 74.0741 78.4185 75.2339 79.4671 75.2339Z" fill="#44413A"/>
+        <path d="M66.7949 72.6433C66.7949 74.073 67.6471 75.2339 68.6994 75.2339C69.7518 75.2339 70.5982 74.0902 70.5982 72.6433C70.5982 71.1965 69.7632 70.0527 68.6994 70.0527C67.6357 70.0527 66.7949 71.2136 66.7949 72.6433Z" fill="#44413A"/>
+        <ellipse cx="88.1047" cy="89.4268" rx="1.37226" ry="1.37215" fill="#ED7E47"/>
+        <path d="M88.5645 89.1226C93.6256 82.425 96.4249 81.1294 97.472 81.8161C100.915 84.0739 95.2451 87.296 88.5645 89.1226Z" fill="#ED7E47"/>
+        <path d="M86.734 89.4093C92.675 86.846 95.2788 86.9867 95.921 87.7972C98.0327 90.462 92.5897 90.5639 86.734 89.4093Z" fill="#ED7E47"/>
+        <path d="M32.3911 83.0616C33.9724 83.9492 35.3426 85.6121 36.0911 87.3393C37.4508 90.4771 36.2791 93.1389 32.3929 94.8229L28.6507 96.4445L29.2878 98.1516C29.5335 98.7973 29.2917 99.1073 28.7447 99.3443L26.4418 100.342C25.8948 100.579 25.2596 100.376 25.0389 99.7876L24.4766 98.2533L21.195 99.6753C20.6192 99.9248 20.2066 99.7617 19.9571 99.1859L18.9592 96.883C18.7097 96.3073 18.8729 95.8947 19.4486 95.6452L22.9605 94.1233L21.4234 89.8658C21.1777 89.22 21.4195 88.9101 21.9665 88.6731L24.2694 87.6751C24.8163 87.4381 25.4516 87.6416 25.6723 88.2298L27.1634 92.3021L29.9269 91.1046C31.7693 90.3063 32.0494 89.2959 31.5255 88.0868C31.2012 87.3384 30.4077 86.6907 29.7302 86.232C29.284 85.9125 29.3397 85.4097 29.7868 84.9424L31.1321 83.4704C31.5217 83.0281 31.8336 82.722 32.3911 83.0616ZM33.2701 73.5897C33.3776 78.4827 29.9302 81.5397 25.2254 81.6431C20.5205 81.7465 16.9421 78.844 16.8346 73.951C16.727 69.0579 20.1745 66.001 24.8793 65.8976C29.5841 65.7942 33.1625 68.6967 33.2701 73.5897ZM28.7221 73.6897C28.68 71.7764 27.6419 70.2301 24.9758 70.2887C22.3097 70.3474 21.3405 71.9377 21.3826 73.851C21.4246 75.7643 22.4628 77.3105 25.1289 77.2519C27.7949 77.1933 28.7641 75.603 28.7221 73.6897ZM35.9813 54.1791L34.9692 53.7532C36.213 55.5699 36.2561 57.7324 35.5747 59.3518C34.3944 62.1568 31.6965 63.4723 27.5035 61.708L19.8693 58.4957C19.0885 58.1671 18.8708 57.633 19.1993 56.8523L19.9294 55.1172C20.2579 54.3364 20.792 54.1187 21.5728 54.4472L27.9057 57.112C30.0167 58.0002 31.3817 57.5875 31.9657 56.1994C32.7688 54.2909 32.1064 52.5486 29.446 51.4291L22.6793 48.5819C21.8985 48.2533 21.6808 47.7192 22.0093 46.9385L22.7394 45.2034C23.0679 44.4227 23.602 44.2049 24.3828 44.5334L37.6848 50.1306C38.4656 50.4591 38.6833 50.9933 38.3548 51.774L37.6247 53.5091C37.2962 54.2898 36.7621 54.5076 35.9813 54.1791ZM48.4236 38.9621C48.1771 40.7586 47.1318 42.6429 45.7989 43.9721C43.3775 46.3868 40.4715 46.2719 37.4808 43.2729L34.6009 40.385L33.2459 41.6032C32.7351 42.0684 32.3581 41.957 31.9372 41.5349L30.1649 39.7577C29.744 39.3356 29.7005 38.67 30.167 38.2492L31.3886 37.1638L28.8631 34.6314C28.42 34.1871 28.4206 33.7434 28.8649 33.3003L30.6421 31.528C31.0864 31.085 31.5301 31.0856 31.9732 31.5299L34.6759 34.2401L38.0742 31.2499C38.5851 30.7847 38.962 30.8962 39.383 31.3182L41.1552 33.0954C41.5762 33.5175 41.6196 34.1831 41.1532 34.6039L37.9103 37.4834L40.037 39.616C41.4549 41.0378 42.4977 40.9283 43.4307 39.9978C44.0083 39.4218 44.3202 38.4462 44.4988 37.6478C44.6326 37.1156 45.1208 36.9831 45.7195 37.228L47.582 37.9404C48.1363 38.1409 48.5354 38.3189 48.4236 38.9621ZM57.557 36.31C53.0439 38.2034 48.9362 36.1163 47.1156 31.7767C45.295 27.4372 46.684 23.044 51.1971 21.1506C55.7102 19.2571 59.8179 21.3443 61.6385 25.6838C63.4591 30.0233 62.0701 34.4166 57.557 36.31ZM55.7971 32.1151C57.5619 31.3747 58.62 29.8421 57.5883 27.383C56.5566 24.924 54.7217 24.6051 52.957 25.3454C51.1922 26.0858 50.1341 27.6185 51.1658 30.0775C52.1975 32.5366 54.0324 32.8555 55.7971 32.1151ZM76.6064 31.7207L76.6317 30.623C75.3971 32.446 73.4009 33.2785 71.6445 33.238C68.6021 33.1678 66.3894 31.1396 66.4944 26.5918L66.6856 18.3115C66.7052 17.4646 67.1223 17.0663 67.9692 17.0858L69.851 17.1293C70.6979 17.1488 71.0962 17.566 71.0767 18.4128L70.9181 25.2817C70.8652 27.5713 71.7495 28.6901 73.255 28.7249C75.325 28.7727 76.7034 27.5178 76.77 24.6323L76.9395 17.2929C76.959 16.4461 77.3762 16.0478 78.223 16.0673L80.1049 16.1108C80.9518 16.1303 81.3501 16.5475 81.3305 17.3943L80.9974 31.8221C80.9779 32.6689 80.5607 33.0673 79.7139 33.0477L77.832 33.0043C76.9851 32.9847 76.5868 32.5676 76.6064 31.7207Z" fill="#484542"/>
+        <path d="M74.7198 126.359C74.8878 128.706 76.2492 129.71 78.3771 129.557C79.6601 129.466 81.2135 128.757 82.2036 128.088C82.6529 127.773 83.0776 127.994 83.4018 128.569L84.4191 130.478C84.7075 130.992 84.8595 131.358 84.388 131.801C82.9419 133.131 80.6733 133.954 78.6705 134.097C73.9766 134.433 70.6859 131.523 70.3388 126.673C69.9917 121.822 72.83 118.411 77.5239 118.075C79.5267 117.932 81.8894 118.423 83.5101 119.534C84.0399 119.905 83.9416 120.289 83.7293 120.839L82.9942 122.873C82.7551 123.488 82.3662 123.768 81.8767 123.52C80.8014 122.999 79.1629 122.519 77.8799 122.61C75.752 122.763 74.5518 124.012 74.7198 126.359ZM95.257 128.592C95.5698 129.379 95.3414 129.909 94.5542 130.222L92.8048 130.917C92.0176 131.23 91.488 131.001 91.1752 130.214L85.7303 116.511C85.4175 115.724 85.646 115.194 86.4332 114.881L88.1825 114.186C88.9697 113.873 89.4993 114.102 89.8121 114.889L90.7737 117.309C91.1102 115.352 92.2381 113.858 93.6084 113.313C94.2498 113.058 94.9783 112.938 95.45 113.02C95.7412 113.073 95.8806 113.254 95.9325 113.47L96.9732 116.939C97.1179 117.388 96.9134 117.638 96.3714 117.718C95.4855 117.867 94.9084 118.029 94.4127 118.226C92.8092 118.863 92.0712 120.574 93.0096 122.936L95.257 128.592ZM113.13 119.422C109.24 122.545 104.619 121.95 101.574 118.158C98.7654 114.66 98.5075 110.079 102.569 106.819C105.724 104.285 109.562 104.705 112.292 108.105C113.077 109.084 113.313 109.578 112.536 110.363L106.339 116.626C107.692 117.31 109.378 117.204 111.041 115.868C111.971 115.122 112.571 113.715 113.03 112.582C113.22 112.067 113.744 111.968 114.288 112.296L115.799 113.175C116.343 113.502 116.662 113.649 116.526 114.281C116.093 116.198 114.695 118.165 113.13 119.422ZM104.877 110.196C103.605 111.217 103.225 112.447 104.071 114.102L108.062 110.053C107.135 109.349 105.929 109.351 104.877 110.196ZM125.661 98.7825C126.489 99.453 126.456 99.8888 126.12 100.597L125.098 102.752C124.762 103.46 124.526 103.591 123.402 103.545L110.398 103.07C109.204 103.025 109.156 102.759 109.202 101.566L109.267 99.9644C109.314 98.8407 109.802 98.6903 111.179 98.788L120.313 99.3705L114.552 94.9712C113.668 94.2738 113.714 93.8097 114.064 93.0727L114.682 91.7688C115.032 91.0318 115.308 90.8156 116.461 90.9461L123.791 91.8186L116.211 85.6185C115.211 84.7972 115.171 84.2227 115.898 83.4218L117.147 82.0346C117.901 81.177 118.24 81.2682 119.069 82.0088L129.372 90.9591C130.187 91.658 130.167 92.0653 129.831 92.774L128.809 94.9283C128.473 95.6369 128.21 95.8248 127.114 95.7212L121.066 95.0747L125.661 98.7825Z" fill="#484542"/>
+        <path d="M126.747 74.3423C126.747 51.8822 112.528 32.7231 92.5493 25.2734M33.0488 107.283C39.6574 115.397 48.6553 121.51 58.9787 124.564" stroke="#ED7E47" stroke-width="4.39223" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <button class="hamburger-btn" id="hamburger-btn" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="tabs" id="main-nav">
+      <div class="tab active" data-panel="mois">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Tableau de bord</span>
+      </div>
+      <div class="tab" data-panel="planning">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg>
+        <span>Planning</span>
+      </div>
+      <div class="tab" data-panel="historique">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <span>Historique</span>
+      </div>
+      <div class="tab" data-panel="reglages">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.96 17.34a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.66 8.96a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.04Z"/></svg>
+        <span>Réglages</span>
+      </div>
+    </nav>
+  </header>
+
+  <!-- PLANNING -->
+  <div class="panel" id="panel-planning">
+    <div class="page-title">Planning</div>
+
+    <div class="day-view-card">
+      <div class="day-view-nav">
+        <button type="button" id="week-view-prev" aria-label="Semaine précédente">‹</button>
+        <div class="day-view-date-label" id="week-view-range-label">—</div>
+        <button type="button" id="week-view-next" aria-label="Semaine suivante">›</button>
+      </div>
+      <button type="button" id="week-view-today-btn" class="day-view-today-btn" style="width:100%; margin-bottom:14px;">Cette semaine</button>
+      <div id="week-view-list"></div>
+    </div>
+
+    <div id="planning-trials"></div>
+  </div>
+
+  <!-- CE MOIS -->
+  <div class="panel active" id="panel-mois">
+    <div class="page-title-row">
+      <div class="page-title">Tableau de bord</div>
+      <div class="page-title-actions">
+        <button class="closure-btn-inline" id="open-closure-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Clôturer le mois
+        </button>
+        <button class="add-btn-inline" id="open-add-panel" aria-label="Ajouter un encaissement">Ajouter un encaissement</button>
+      </div>
+    </div>
+    <div class="tag-card">
+      <div class="tag-top-row">
+        <div class="tag-top-left">
+          <div class="tag-month-title" id="month-label"></div>
+          <div class="tag-label">Disponible réel</div>
+        </div>
+        <div class="tag-amount" id="total-disponible">0 €</div>
+      </div>
+
+      <div class="tag-card-divider"></div>
+
+      <div class="goal-header">
+        <span class="goal-title" id="goal-title">Objectif pour égaler ton ancien salaire (avec ARE)</span>
+        <span class="goal-count"><strong id="goal-count">0</strong> / <span id="goal-target">0</span> abonnements équiv.</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="goal-progress-fill" style="width:0%;"></div></div>
+      <div class="note" id="goal-note-degressif"></div>
+
+      <div class="breakdown-frame breakdown-frame-spaced">
+        <div class="breakdown-ca-group">
+          <div class="breakdown-row breakdown-no-border">
+            <span class="breakdown-label">CA encaissé</span>
+            <span class="breakdown-val money-in" id="mini-ca">0 €</span>
+          </div>
+          <div class="note" id="ca-pending-note" style="display:none;"></div>
+        </div>
+        <div class="breakdown-row breakdown-no-border">
+          <span class="breakdown-label">Prélèvements obligatoires</span>
+          <span class="breakdown-val money-out" id="mini-total-provision">− 0 €</span>
+        </div>
+        <div class="breakdown-row breakdown-subrow">
+          <span class="breakdown-label">dont URSSAF</span>
+          <span class="breakdown-val" id="mini-urssaf">− 0 €</span>
+        </div>
+        <div class="breakdown-row breakdown-subrow breakdown-subrow-last" id="impot-subrow">
+          <span class="breakdown-label">dont impôt sur le revenu</span>
+          <span class="breakdown-val" id="mini-impot">− 0 €</span>
+        </div>
+        <div class="breakdown-row" id="are-breakdown-row">
+          <span class="breakdown-label">+ ARE réduite estimée</span>
+          <span class="breakdown-val money-in" id="mini-are">+ 0 €</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-divider"></div>
+
+    <div class="section-title" style="margin-top:0;">Encaissements du mois</div>
+    <div id="entries-list"></div>
+
+    <div class="page-divider"></div>
+
+    <div class="mini-card" style="margin-bottom:20px;">
+      <div class="goal-header">
+        <span class="goal-title">Plafond micro-entreprise (année)</span>
+        <span class="goal-count"><strong id="mini-plafond-ca">0 €</strong> / <span id="mini-plafond-max">0 €</span></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="plafond-progress-fill" style="width:0%;"></div></div>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="panel" id="panel-historique">
+    <div class="page-title">Historique</div>
+    <div class="subtabs">
+      <div class="subtab active" data-group="historique" data-subpanel="histoire-mois">Par mois</div>
+      <div class="subtab" data-group="historique" data-subpanel="histoire-impayes">Impayés</div>
+    </div>
+    <div class="subpanel active" data-group="historique" id="subpanel-histoire-mois">
+      <div id="history-list"></div>
+    </div>
+    <div class="subpanel" data-group="historique" id="subpanel-histoire-impayes">
+      <div id="unpaid-summary"></div>
+      <div id="unpaid-list"></div>
+    </div>
+  </div>
+
+  <!-- REGLAGES -->
+  <div class="panel" id="panel-reglages">
+    <div class="page-title">Réglages</div>
+    <div class="subtabs">
+      <div class="subtab active" data-group="reglages" data-subpanel="clients">Clients</div>
+      <div class="subtab" data-group="reglages" data-subpanel="site">Paramètres du site</div>
+    </div>
+
+    <div class="subpanel active" data-group="reglages" id="subpanel-clients">
+      <input type="text" id="clients-search" placeholder="Rechercher un client ou un chien..." style="margin-bottom:16px;">
+      <div class="section-title" style="margin-top:0;">Clients actifs</div>
+      <div id="clients-active-list"></div>
+      <div class="section-title">Clients passés</div>
+      <div id="clients-past-list"></div>
+      <button class="add-client-btn sticky-add-client-btn" id="open-add-client-only">Ajouter un client</button>
+    </div>
+
+    <div class="subpanel" data-group="reglages" id="subpanel-site">
+    <div class="settings-row">
+      <label for="s-target-salaire">Salaire net visé (ton ancien "net")</label>
+      <input type="number" id="s-target-salaire" step="10" min="0">
+      <div class="note">Par défaut ≈ 4 212 €/mois (75 % de ton brut cadre de 5616,15 €). C'est ce montant que l'objectif de balades cherche à égaler, ARE comprise.</div>
+    </div>
+
+    <div class="settings-row">
+      <label for="s-essence">Frais d'essence estimés / mois</label>
+      <input type="number" id="s-essence" step="1" min="0">
+      <div class="note">Par défaut 0 €. Ajuste selon tes trajets réels — ça vient en déduction directe du calcul de l'objectif.</div>
+    </div>
+
+    <div class="settings-row">
+      <label style="margin-bottom:10px;">Grille tarifaire (toutoucrew.fr)</label>
+      <div class="tariff-sub-label">Balade test (à l'unité)</div>
+      <input type="number" id="s-tarif-test" step="1" min="0">
+
+      <div class="tariff-columns">
+        <div>
+          <div class="tariff-col-title">1 chien / foyer</div>
+          <label for="s-tarif-seul-1">1x/semaine</label>
+          <input type="number" id="s-tarif-seul-1" step="1" min="0">
+          <label for="s-tarif-seul-2">2x/semaine</label>
+          <input type="number" id="s-tarif-seul-2" step="1" min="0">
+          <label for="s-tarif-seul-3">3x/semaine</label>
+          <input type="number" id="s-tarif-seul-3" step="1" min="0">
+          <label for="s-tarif-seul-4">4x/semaine</label>
+          <input type="number" id="s-tarif-seul-4" step="1" min="0">
+          <label for="s-tarif-seul-5">5x/semaine</label>
+          <input type="number" id="s-tarif-seul-5" step="1" min="0">
+        </div>
+        <div>
+          <div class="tariff-col-title">2 chiens / foyer</div>
+          <label for="s-tarif-deux-1">1x/semaine</label>
+          <input type="number" id="s-tarif-deux-1" step="1" min="0">
+          <label for="s-tarif-deux-2">2x/semaine</label>
+          <input type="number" id="s-tarif-deux-2" step="1" min="0">
+          <label for="s-tarif-deux-3">3x/semaine</label>
+          <input type="number" id="s-tarif-deux-3" step="1" min="0">
+          <label for="s-tarif-deux-4">4x/semaine</label>
+          <input type="number" id="s-tarif-deux-4" step="1" min="0">
+          <label for="s-tarif-deux-5">5x/semaine</label>
+          <input type="number" id="s-tarif-deux-5" step="1" min="0">
+        </div>
+      </div>
+      <div class="note">Ces montants alimentent le sélecteur "Fréquence / Tarif" quand tu ajoutes un encaissement. Modifie-les si tes tarifs changent sur le site.</div>
+    </div>
+
+    <div class="settings-row">
+      <label for="s-tmi">Taux marginal d'imposition (TMI)</label>
+      <input type="number" id="s-tmi" step="1" min="0" max="45">
+      <div class="note">Estimation par défaut : 30 %. Vu ton ancien salaire, tu es probablement au-dessus du seuil du versement libératoire — l'impôt se calcule donc sur la moitié de ton CA (abattement micro-BIC 50 %) à ton TMI. Vérifie ce taux sur ton dernier avis d'imposition.</div>
+    </div>
+
+    <div class="settings-row">
+      <label for="s-taux">Taux de cotisations URSSAF (BIC services)</label>
+      <input type="number" id="s-taux" step="0.1" min="0" max="100">
+      <div class="note">Par défaut 21,2 % pour une activité de prestation de services (BIC). À ajuster selon ton régime réel.</div>
+    </div>
+
+    <div class="settings-row">
+      <div class="toggle-row">
+        <label style="margin:0;">ACRE active</label>
+        <div class="switch" id="s-acre-toggle"></div>
+      </div>
+      <div class="note">Exonération partielle de cotisations la 1ère année. 25 % à partir du 1er juillet 2026 (50 % avant).</div>
+      <label for="s-acre-pct" style="margin-top:10px;">% d'exonération ACRE</label>
+      <input type="number" id="s-acre-pct" step="1" min="0" max="100">
+    </div>
+
+    <div class="settings-row">
+      <div class="toggle-row">
+        <label style="margin:0;">ARE active</label>
+        <div class="switch" id="s-are-toggle"></div>
+      </div>
+      <div class="note">Désactive dès que tu n'es plus indemnisé par France Travail — la ligne ARE disparaît du détail "Disponible" et des calculs d'objectif.</div>
+    </div>
+
+    <div class="settings-row" id="are-settings-block">
+      <label for="s-sjr">SJR (salaire journalier de référence)</label>
+      <input type="number" id="s-sjr" step="0.01" min="0">
+      <div class="note">Estimation actuelle : 184,60 €/jour (basée sur ta rémunération brute moyenne de 5616,15 €). À remplacer par le SJR exact dès ta notification France Travail.</div>
+    </div>
+
+    <div class="settings-row" id="are-amount-block">
+      <label for="s-are">ARE journalière brute</label>
+      <input type="number" id="s-are" step="0.01" min="0">
+      <div class="note">Estimation actuelle : 105,20 €/jour (formule 57 % du SJR). À remplacer par le montant exact de ta notification.</div>
+    </div>
+
+    <div class="settings-row">
+      <label for="s-plafond">Plafond annuel micro-entreprise (services)</label>
+      <input type="number" id="s-plafond" step="100" min="0">
+      <div class="note">83 600 € pour 2026-2028, pour les prestations de services (BIC/BNC).</div>
+    </div>
+
+    <div class="settings-row">
+      <div class="toggle-row">
+        <label style="margin:0;">Micro-entreprise créée cette année</label>
+        <div class="switch" id="s-micro-created-toggle"></div>
+      </div>
+      <div class="note">Active cette option la première année : le plafond sera calculé au prorata depuis ta date de création jusqu'au 31 décembre, au lieu du plafond annuel complet.</div>
+      <div id="micro-creation-date-block" style="display:none; margin-top:10px;">
+        <label for="s-micro-creation-date">Date de création de la micro-entreprise</label>
+        <input type="date" id="s-micro-creation-date">
+        <div class="note" id="micro-creation-prorata-note"></div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong>À savoir :</strong> les calculs de cotisations et d'ARE réduite sont des estimations basées sur les formules générales 2026. Ils ne remplacent pas une simulation officielle France Travail ou l'avis d'un expert-comptable. Vérifie toujours tes montants exacts avant de déclarer.
+    </div>
+
+    <button class="renewal-btn" id="open-reset-modal" style="border-color: var(--warning); color: var(--warning); margin-top: 18px;">🗑️ Réinitialiser toutes les données</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel-overlay" id="panel-overlay"></div>
+<aside class="side-panel" id="side-panel" aria-hidden="true">
+  <div class="side-panel-header">
+    <span class="side-panel-title">Ajouter un encaissement</span>
+    <button class="side-panel-close" id="close-add-panel" aria-label="Fermer">✕</button>
+  </div>
+  <form class="entry-form" id="entry-form">
+    <div class="entry-form-fields">
+      <div class="full">
+        <label for="f-client">Client</label>
+        <select id="f-client">
+          <option value="">— Sélectionner —</option>
+          <option value="__new__">+ Nouveau client</option>
+        </select>
+      </div>
+      <div class="full client-fields-card" id="client-fields-group">
+        <div id="client-new-fields" style="display:none;">
+          <label for="f-owner-name">Nom du maître</label>
+          <input type="text" id="f-owner-name" placeholder="Merlin">
+          <label for="f-dog-name" style="margin-top:8px;">Nom du chien</label>
+          <input type="text" id="f-dog-name" placeholder="Maya">
+        </div>
+        <div id="existing-client-recap" style="display:none;">
+          <label>Maître</label>
+          <div class="recap-value" id="recap-owner-name"></div>
+          <label style="margin-top:8px;">Chien(s)</label>
+          <div class="recap-value" id="recap-dog-names"></div>
+        </div>
+        <div id="second-dog-section" style="display:none;">
+          <div id="second-dog-container" style="display:none;">
+            <label for="f-second-dog-name">Nom du 2e chien</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <input type="text" id="f-second-dog-name" placeholder="Rex" style="flex:1;">
+              <button type="button" class="side-panel-close" id="remove-second-dog-btn" aria-label="Supprimer le 2e chien" style="flex-shrink:0;">✕</button>
+            </div>
+          </div>
+          <button type="button" class="add-client-btn" id="add-second-dog-btn" style="margin-top:0; margin-bottom:0;">+ Ajouter un chien</button>
+        </div>
+      </div>
+      <div class="full" id="date-field-wrap">
+        <label for="f-date">Date de la première balade</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="full" id="formule-field-wrap">
+        <label for="f-formule">Formule</label>
+        <select id="f-formule">
+          <option value="custom">— Sélectionner —</option>
+          <option value="test">Balade test</option>
+          <option value="seul">Abonnement 1 chien</option>
+          <option value="deux">Abonnement 2 chiens</option>
+        </select>
+        <div class="note" id="f-formule-note" style="display:none;"></div>
+      </div>
+      <div class="full" id="frequence-container" style="display:none;">
+        <label for="f-frequence">Fréquence</label>
+        <select id="f-frequence"></select>
+      </div>
+      <div class="full" id="dog-picker-container" style="display:none;">
+        <label>Pour quel chien ?</label>
+        <div class="day-chips" id="dog-picker-chips"></div>
+      </div>
+      <div class="full" id="walk-days-container" style="display:none;">
+        <div id="walk-days-groups"></div>
+      </div>
+      <div class="full" id="amount-field-wrap" style="display:none;">
+        <label for="f-amount">Montant (€)</label>
+        <input type="number" id="f-amount" step="0.01" min="0" placeholder="35">
+        <div class="note" id="f-amount-hint" style="display:none;"></div>
+      </div>
+      <div class="full" id="note-field-wrap">
+        <label for="f-note">Note (optionnel)</label>
+        <input type="text" id="f-note" placeholder="Abonnement mensuel, balade double...">
+      </div>
+      <div class="full" id="single-dog-locked-note" style="display:none;"></div>
+    </div>
+    <div class="full" id="form-error" style="display:none;"></div>
+    <button type="submit" class="entry-form-submit">Ajouter l'encaissement</button>
+  </form>
+</aside>
+
+<div class="modal-overlay" id="closure-overlay"></div>
+<div class="modal" id="closure-modal" aria-hidden="true">
+  <div id="closure-step-confirm">
+    <div class="modal-title">Clôturer <span id="closure-month-label"></span> ?</div>
+    <div class="modal-text">Ce mois passera en lecture seule : plus aucune modification possible dessus. Tu pourras ensuite renouveler les abonnements pour démarrer le mois suivant.</div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="closure-cancel">Non</button>
+      <button class="modal-btn primary" id="closure-confirm-yes">Oui, clôturer</button>
+    </div>
+  </div>
+
+  <div id="closure-step-renewal" style="display:none;">
+    <div class="modal-title">Renouveler les abonnements</div>
+    <div class="note" style="margin-bottom:14px;">Décoche les abonnements qui ne sont pas reconduits. Les autres seront ajoutés au nouveau mois, au montant plein.</div>
+    <div id="renewal-list"></div>
+    <div class="renewal-summary" id="renewal-summary"></div>
+    <div class="full" id="renewal-error" style="display:none;"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="closure-back">Annuler</button>
+      <button class="modal-btn primary" id="confirm-renewal">Valider et passer au mois suivant</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="client-detail-overlay"></div>
+<div class="modal" id="client-detail-modal" aria-hidden="true">
+  <div class="side-panel-header" style="margin-bottom:14px;">
+    <span class="modal-title" id="client-detail-title" style="margin-bottom:0;">Fiche client</span>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="side-panel-close" id="cd-toggle-archive" aria-label="Archiver" title="Archiver" style="width:auto; padding:0 12px; font-size:0.78rem; font-weight:600;">Archiver</button>
+      <button class="side-panel-close" id="cd-close" aria-label="Fermer">✕</button>
+    </div>
+  </div>
+
+  <div class="subtabs" style="margin-bottom:16px;">
+    <div class="subtab active" data-group="fiche-client" data-subpanel="cd-general">Infos générales</div>
+    <div class="subtab" data-group="fiche-client" data-subpanel="cd-dogs">Chiens et abonnement</div>
+    <div class="subtab" data-group="fiche-client" data-subpanel="cd-payments">Encaissements</div>
+  </div>
+
+  <div class="subpanel active" data-group="fiche-client" id="subpanel-cd-general">
+    <label for="cd-owner-name">Nom du maître</label>
+    <input type="text" id="cd-owner-name" style="margin-bottom:14px;">
+
+    <div id="cd-conjoint-add-wrap">
+      <button type="button" class="add-client-btn" id="cd-add-conjoint" style="margin-bottom:14px;">+ Ajouter un conjoint</button>
+    </div>
+    <div id="cd-conjoint-section" style="display:none; margin-bottom:14px;">
+      <label for="cd-conjoint-prenom">Prénom du conjoint</label>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="text" id="cd-conjoint-prenom" placeholder="Prénom" style="flex:1;">
+        <button type="button" class="side-panel-close" id="cd-remove-conjoint" aria-label="Retirer le conjoint" style="flex-shrink:0;">✕</button>
+      </div>
+    </div>
+
+    <label for="cd-address">Adresse</label>
+    <input type="text" id="cd-address" style="margin-bottom:14px;">
+
+    <label for="cd-building-code">Code immeuble</label>
+    <input type="text" id="cd-building-code" style="margin-bottom:14px;">
+
+    <label for="cd-floor">Étage</label>
+    <input type="text" id="cd-floor" style="margin-bottom:14px;">
+
+    <label for="cd-phone-primary">Numéro de portable principal</label>
+    <div style="display:flex; gap:6px; align-items:center; margin-bottom:14px;">
+      <input type="tel" id="cd-phone-primary" inputmode="numeric" style="flex:1;">
+      <button type="button" class="whatsapp-btn" id="cd-phone-primary-wa" title="Envoyer un message WhatsApp" aria-label="Envoyer un message WhatsApp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-11.9 7.8L3 21l1.7-6.1A8.5 8.5 0 1 1 21 11.5Z"/></svg>
+      </button>
+    </div>
+
+    <div id="cd-phone-conjoint-wrap" style="display:none;">
+      <label for="cd-phone-conjoint">Numéro de portable conjoint</label>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="tel" id="cd-phone-conjoint" inputmode="numeric" style="flex:1;">
+        <button type="button" class="whatsapp-btn" id="cd-phone-conjoint-wa" title="Envoyer un message WhatsApp" aria-label="Envoyer un message WhatsApp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-11.9 7.8L3 21l1.7-6.1A8.5 8.5 0 1 1 21 11.5Z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpanel" data-group="fiche-client" id="subpanel-cd-dogs">
+    <div id="cd-dogs-section"></div>
+    <button class="add-client-btn" id="cd-add-second-dog" style="display:none;">+ Ajouter un 2e chien</button>
+  </div>
+
+  <div class="subpanel" data-group="fiche-client" id="subpanel-cd-payments">
+    <div class="grid-summary">
+      <div class="mini-card">
+        <div class="lbl">Total encaissé (historique)</div>
+        <div class="val pos" id="cd-total-revenue">0 €</div>
+      </div>
+      <div class="mini-card">
+        <div class="lbl">Encaissements</div>
+        <div class="val" id="cd-entry-count">0</div>
+      </div>
+    </div>
+
+    <div class="section-title">Historique des encaissements</div>
+    <div id="cd-entries-list"></div>
+  </div>
+
+  <div class="modal-actions" style="margin-top:18px;">
+    <button class="modal-btn primary" id="cd-validate-changes" disabled style="width:100%;">Valider mes changements</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="client-changes-overlay"></div>
+<div class="modal" id="client-changes-modal" aria-hidden="true">
+  <div class="modal-title">Enregistrer ces changements ?</div>
+  <div class="modal-text">Voici ce qui va changer :</div>
+  <div class="full" id="client-changes-summary" style="margin-bottom:6px;"></div>
+  <div class="modal-actions">
+    <button class="modal-btn secondary" id="client-changes-cancel">Continuer l'édition</button>
+    <button class="modal-btn primary" id="client-changes-save">Enregistrer</button>
+  </div>
+  <button class="modal-btn secondary" id="client-changes-discard" style="width:100%; margin-top:8px; color: var(--warning); border-color: var(--warning);">Ne pas enregistrer</button>
+</div>
+
+<div class="modal-overlay" id="reset-overlay"></div>
+<div class="modal" id="reset-modal" aria-hidden="true">
+  <div class="modal-title">Réinitialiser toutes les données ?</div>
+  <div class="modal-text">Ceci supprime définitivement tous tes clients, encaissements et réglages personnalisés (grille tarifaire, TMI, etc.). Cette action est irréversible.</div>
+  <div class="full" id="reset-error" style="display:none;"></div>
+  <div class="modal-actions">
+    <button class="modal-btn secondary" id="reset-cancel">Annuler</button>
+    <button class="modal-btn primary" id="reset-confirm" style="background: var(--warning);">Oui, tout supprimer</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="stop-sub-overlay"></div>
+<div class="modal" id="stop-sub-modal" aria-hidden="true">
+  <div class="modal-title">Arrêter l'abonnement aussi ?</div>
+  <div class="modal-text" id="stop-sub-text"></div>
+  <div class="modal-actions">
+    <button class="modal-btn secondary" id="stop-sub-no">Non, juste l'encaissement</button>
+    <button class="modal-btn primary" id="stop-sub-yes">Oui, arrêter l'abonnement</button>
+  </div>
+</div>
+
+<script>
+// Filet de sécurité : si window.storage (stockage persistant Claude) n'est pas
+// disponible — par exemple si ce fichier est ouvert en local plutôt que via
+// la conversation Claude — on bascule sur le localStorage du navigateur.
+// Les données restent alors propres à cet appareil/navigateur et ne sont pas
+// liées à celles vues côté Claude.
+if (typeof window.storage === 'undefined') {
+  const PREFIX = 'toutoucrew_';
+  window.storage = {
+    get: async (key) => {
+      const v = localStorage.getItem(PREFIX + key);
+      if (v === null) throw new Error('Clé introuvable : ' + key);
+      return { key, value: v };
+    },
+    set: async (key, value) => {
+      localStorage.setItem(PREFIX + key, value);
+      return { key, value };
+    },
+    delete: async (key) => {
+      localStorage.removeItem(PREFIX + key);
+      return { key, deleted: true };
+    },
+    list: async (prefix) => {
+      const keys = Object.keys(localStorage)
+        .filter(k => k.startsWith(PREFIX + (prefix || '')))
+        .map(k => k.slice(PREFIX.length));
+      return { keys };
+    }
+  };
+}
+
+const DEFAULT_SETTINGS = {
+  tauxUrssaf: 21.2,
+  acreActive: true,
+  areActive: true,
+  acrePct: 25,
+  sjr: 184.60,
+  areJournaliere: 105.20,
+  plafond: 83600,
+  microCreatedThisYear: false,
+  microCreationDate: null,
+  abattementMicroBic: 50,
+  targetNetSalaire: 4212,
+  essenceMensuelle: 0,
+  prixBalade: 35,
+  tmi: 30,
+  tarifs: {
+    test: 35,
+    seul: [140, 270, 390, 510, 625],
+    deux: [250, 485, 700, 920, 1125]
+  },
+  activeMonth: currentMonthKey(),
+  closedMonths: []
+};
+
+let entries = [];
+let clients = [];
+let settings = { ...DEFAULT_SETTINGS };
+
+async function loadData() {
+  try {
+    const e = await window.storage.get('entries');
+    entries = e ? JSON.parse(e.value) : [];
+  } catch { entries = []; }
+  try {
+    const c = await window.storage.get('clients');
+    clients = c ? JSON.parse(c.value) : [];
+  } catch { clients = []; }
+  try {
+    const s = await window.storage.get('settings');
+    settings = s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s.value) } : { ...DEFAULT_SETTINGS };
+  } catch { settings = { ...DEFAULT_SETTINGS }; }
+  migrateClientsToDogs();
+  render();
+}
+
+// Migration : les anciens clients avaient un seul "dogName" au niveau racine.
+// On les fait passer sur un tableau dogs[] (jusqu'à 2 chiens par foyer),
+// chacun avec son propre planning/test.
+function migrateClientsToDogs() {
+  let changed = false;
+  clients.forEach(c => {
+    if (!c.dogs) {
+      c.dogs = [{
+        id: c.id + '-d1',
+        name: c.dogName || 'Chien',
+        walkDays: c.walkDays || [],
+        isTrial: !!c.isTrial,
+        trialDate: c.trialDate || null
+      }];
+      delete c.dogName;
+      delete c.walkDays;
+      delete c.isTrial;
+      delete c.trialDate;
+      changed = true;
+    }
+  });
+  if (changed) saveClients();
+}
+
+async function saveEntries() {
+  try { await window.storage.set('entries', JSON.stringify(entries)); }
+  catch (e) { console.error('save entries failed', e); throw e; }
+}
+async function saveClients() {
+  try { await window.storage.set('clients', JSON.stringify(clients)); }
+  catch (e) { console.error('save clients failed', e); throw e; }
+}
+async function saveSettings() {
+  try { await window.storage.set('settings', JSON.stringify(settings)); }
+  catch (e) { console.error('save settings failed', e); }
+}
+
+function clientLabel(client) {
+  const names = (client.dogs || []).map(d => d.name).join(' & ');
+  return `🐶 ${names} · 👤 ${client.ownerName}`;
+}
+function clientPhoto(client) {
+  if (!client) return null;
+  const withPhoto = (client.dogs || []).find(d => d.photo);
+  return withPhoto ? withPhoto.photo : null;
+}
+function getClientById(id) {
+  return clients.find(c => c.id === id) || null;
+}
+function getDogById(client, dogId) {
+  return (client.dogs || []).find(d => d.id === dogId) || null;
+}
+function newDogId(client) {
+  return client.id + '-d' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 5);
+}
+function populateClientSelect() {
+  const select = document.getElementById('f-client');
+  const currentValue = select.value;
+  const sorted = [...clients].filter(c => !c.archived).sort((a, b) => clientLabel(a).localeCompare(clientLabel(b)));
+  select.innerHTML = '<option value="">— Sélectionner —</option>' +
+    sorted.map(c => {
+      const dogs = c.dogs || [];
+      const subscribedCount = dogs.filter(d => !d.isTrial && (d.walkDays || []).length > 0).length;
+      const total = dogs.length;
+      const statusLabel = total > 0 ? ` (${subscribedCount}/${total} abonné${total > 1 ? 's' : ''})` : '';
+      const allDogsSubscribed = total >= 2 && subscribedCount === total;
+      if (allDogsSubscribed) {
+        return `<option value="${c.id}" disabled>${escapeHtml(clientLabel(c))}${statusLabel}</option>`;
+      }
+      return `<option value="${c.id}">${escapeHtml(clientLabel(c))}${statusLabel}</option>`;
+    }).join('') +
+    '<option value="__new__">+ Nouveau client</option>';
+  if (sorted.some(c => c.id === currentValue)) select.value = currentValue;
+}
+
+const WEEKDAYS = [
+  { code: 'lun', label: 'L', full: 'Lundi' },
+  { code: 'mar', label: 'M', full: 'Mardi' },
+  { code: 'mer', label: 'M', full: 'Mercredi' },
+  { code: 'jeu', label: 'J', full: 'Jeudi' },
+  { code: 'ven', label: 'V', full: 'Vendredi' }
+];
+
+// Met à jour le planning d'un chien et note la date depuis quand cet
+// abonnement précis est actif — seulement si les jours changent vraiment
+// (un simple renouvellement à l'identique ne redémarre pas le compteur).
+function setDogWalkDays(dog, newDays, sinceDate) {
+  const changed = JSON.stringify((dog.walkDays || []).slice().sort()) !== JSON.stringify((newDays || []).slice().sort());
+  dog.walkDays = newDays;
+  if (changed || !dog.subscriptionSince) dog.subscriptionSince = sinceDate;
+}
+
+function dogStatusLabel(d) {
+  if (d.isTrial && d.trialDate) {
+    const date = new Date(d.trialDate + 'T00:00:00');
+    return `${d.name} : balade test — ${date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+  }
+  const n = (d.walkDays || []).length;
+  if (n > 0) return `${d.name} : abonnement — ${n}x/semaine`;
+  return `${d.name} : aucune balade planifiée`;
+}
+// Version détaillée utilisée uniquement dans la fiche client (onglet
+// "Chiens et abonnement") — précise depuis quand l'abonnement est actif.
+function dogDetailStatusLabel(d, client) {
+  if (d.isTrial && d.trialDate) return dogStatusLabel(d);
+  const n = (d.walkDays || []).length;
+  if (n > 0) {
+    if (d.subscriptionSince) {
+      const since = new Date(d.subscriptionSince + 'T00:00:00').toLocaleDateString('fr-FR');
+      return `Abonnement actif — ${n}x/semaine, depuis le ${since}`;
+    }
+    // Pas de date enregistrée (abonnement créé avant ce suivi) : on
+    // estime depuis le premier encaissement d'abonnement de ce client —
+    // fiable seulement pour un foyer à 1 seul chien (pas d'ambiguïté sur
+    // quel chien correspond à quel encaissement).
+    if (client && client.dogs.length === 1) {
+      const subEntries = entries.filter(e => e.clientId === client.id && e.formuleLabel && /^Abonnement \d+x\/semaine/.test(e.formuleLabel));
+      if (subEntries.length > 0) {
+        const earliest = subEntries.reduce((a, b) => (a.date < b.date ? a : b));
+        const since = new Date(earliest.date + 'T00:00:00').toLocaleDateString('fr-FR');
+        return `Abonnement actif — ${n}x/semaine, depuis le ${since} (estimé)`;
+      }
+    }
+    return `Abonnement actif — ${n}x/semaine`;
+  }
+  return dogStatusLabel(d);
+}
+function clientStatusLabel(c) {
+  if (c.archived) return 'Client passé';
+  const dogs = c.dogs || [];
+  if (dogs.length === 0) return 'Aucune balade planifiée';
+  if (dogs.length === 1) return dogStatusLabel(dogs[0]);
+  return dogs.map(dogStatusLabel).join(' · ');
+}
+
+function renderClientsSettings() {
+  const activeContainer = document.getElementById('clients-active-list');
+  const pastContainer = document.getElementById('clients-past-list');
+
+  if (clients.length === 0) {
+    activeContainer.innerHTML = '<div class="empty">Aucun client pour l\'instant. Ajoute-en un ci-dessus ou depuis le formulaire d\'encaissement.</div>';
+    pastContainer.innerHTML = '';
+    return;
+  }
+
+  const query = (document.getElementById('clients-search').value || '').trim().toLowerCase();
+  const matchesQuery = c => {
+    if (!query) return true;
+    const haystack = [c.ownerName, c.conjointPrenom, ...(c.dogs || []).map(d => d.name)]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(query);
+  };
+
+  const sorted = [...clients].filter(matchesQuery).sort((a, b) => clientLabel(a).localeCompare(clientLabel(b)));
+  const active = sorted.filter(c => !c.archived);
+  const past = sorted.filter(c => c.archived);
+
+  const rowHtml = c => `
+    <div class="client-summary-row" data-id="${c.id}">
+      <div class="client-summary-info">
+        <div class="client-summary-name">${escapeHtml(clientLabel(c))}</div>
+        <div class="client-summary-status">${clientStatusLabel(c)}</div>
+      </div>
+      <span style="color:var(--text-dim);">›</span>
+    </div>
+  `;
+
+  activeContainer.innerHTML = active.length > 0
+    ? active.map(rowHtml).join('')
+    : `<div class="empty">${query ? 'Aucun résultat pour cette recherche.' : 'Aucun client actif pour l\'instant.'}</div>`;
+  pastContainer.innerHTML = past.length > 0
+    ? past.map(rowHtml).join('')
+    : `<div class="empty">${query ? 'Aucun résultat pour cette recherche.' : 'Aucun client passé pour l\'instant.'}</div>`;
+
+  [...activeContainer.querySelectorAll('.client-summary-row'), ...pastContainer.querySelectorAll('.client-summary-row')]
+    .forEach(row => row.addEventListener('click', () => openClientDetail(row.dataset.id)));
+}
+
+// Fiche client
+const clientDetailOverlay = document.getElementById('client-detail-overlay');
+const clientDetailModal = document.getElementById('client-detail-modal');
+let clientDetailId = null;
+let clientDetailSnapshot = null;
+let clientDetailDraft = null;
+let clientDetailFormuleTargetDogId = null;
+let clientDetailFormuleSelection = null; // { formule, freq } — indépendant du chien qui le détient
+
+function dayLabelsFr(codes) {
+  const sorted = WEEKDAYS.filter(d => (codes || []).includes(d.code));
+  return sorted.length > 0 ? sorted.map(d => d.full).join(', ') : 'aucun jour';
+}
+
+// Lit un fichier image, le recadre en carré (centré) et le redimensionne à
+// une taille raisonnable pour rester léger en stockage.
+function cropImageToSquareDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Lecture du fichier échouée'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Image invalide'));
+      img.onload = () => {
+        const size = 200;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const srcSize = Math.min(img.width, img.height);
+        const srcX = (img.width - srcSize) / 2;
+        const srcY = (img.height - srcSize) / 2;
+        ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Calcule le prix au prorata du mois actif, du jour d'aujourd'hui jusqu'à
+// la fin du mois — utilisé pour un changement de formule en cours de mois.
+function proratedMonthlyAmountFromToday(monthlyPrice) {
+  const activeMonth = settings.activeMonth || currentMonthKey();
+  const [y, m] = activeMonth.split('-').map(Number);
+  const totalDaysInMonth = new Date(y, m, 0).getDate();
+  const today = new Date();
+  const todayMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  if (todayMonthKey !== activeMonth) return monthlyPrice;
+  const remainingDays = Math.max(1, totalDaysInMonth - today.getDate() + 1);
+  return Math.round(monthlyPrice * remainingDays / totalDaysInMonth * 100) / 100;
+}
+
+// Retrouve l'encaissement représentant l'abonnement actuel d'un client
+// (foyer à 1 seul chien, donc sans ambiguïté), le plus récent d'abord.
+function findCurrentSubEntry(clientId) {
+  const subEntries = entries.filter(e => e.clientId === clientId && e.formuleLabel && /^Abonnement \d+x\/semaine/.test(e.formuleLabel));
+  if (subEntries.length === 0) return null;
+  return subEntries.reduce((a, b) => (a.date > b.date ? a : b));
+}
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Date de référence pour un changement de formule : "aujourd'hui" si ça
+// tombe bien dans le mois actif, sinon le 1er jour du mois actif — pour
+// que l'encaissement modifié/créé reste visible dans "Encaissements du
+// mois" au lieu de disparaître dans un mois qui n'est plus affiché (ex:
+// juste après une clôture qui a fait avancer le mois actif).
+function modificationDateWithinActiveMonth() {
+  const activeMonth = settings.activeMonth || currentMonthKey();
+  const today = new Date();
+  const todayMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  return todayMonthKey === activeMonth ? todayISO() : firstDayOfMonth(activeMonth);
+}
+
+// Aperçu textuel affiché avant confirmation — ne modifie rien, se contente
+// de calculer ce qui SERAIT appliqué.
+// Écrit directement dans le brouillon de la fiche quand la Formule ou la
+// Fréquence change — plus de bouton séparé, ça passe désormais par
+// "Valider mes changements" comme tout le reste.
+// Détermine quel(s) chien(s) sont visés par la formule choisie : le seul
+// chien du foyer, les deux (formule "2 chiens"), ou celui ciblé par le
+// radio bouton.
+function getFormuleTargetDogs(draftClient, newFormule) {
+  if (draftClient.dogs.length === 1) return [draftClient.dogs[0]];
+  if (newFormule === 'deux') return draftClient.dogs.slice(0, 2);
+  const targetId = clientDetailFormuleTargetDogId || draftClient.dogs[0].id;
+  const d = getDogById(draftClient, targetId);
+  return d ? [d] : [draftClient.dogs[0]];
+}
+
+function handleDogFormuleOrFreqChange(formuleCard, draftClient) {
+  const formuleSel = formuleCard.querySelector('.dog-formule-select');
+  const freqSel = formuleCard.querySelector('.dog-formule-freq-select');
+  const freqWrap = formuleCard.querySelector('.dog-formule-freq-wrap');
+  const noteEl = formuleCard.querySelector('.dog-formule-note');
+  const newFormule = formuleSel.value;
+  const newFreq = parseInt(freqSel.value) || 1;
+  draftClient.subscriptionType = newFormule === 'deux' ? 'deux' : 'seul';
+  clientDetailFormuleSelection = { formule: newFormule, freq: newFreq };
+
+  freqWrap.style.display = (newFormule === 'seul' || newFormule === 'deux') ? 'block' : 'none';
+
+  const targets = getFormuleTargetDogs(draftClient, newFormule);
+
+  if (newFormule === 'aucun') {
+    targets.forEach(d => { d.walkDays = []; d.isTrial = false; d.trialDate = null; });
+    noteEl.style.display = 'none';
+  } else if (newFormule === 'test') {
+    targets.forEach(d => { d.walkDays = []; d.isTrial = true; d.trialDate = d.trialDate || todayISO(); });
+    noteEl.style.display = 'none';
+  } else {
+    targets.forEach(d => {
+      const dogCard = document.querySelector(`.dog-detail-card[data-dog-id="${d.id}"]`);
+      if (dogCard) ensureDayChipsForDog(dogCard, d.id, draftClient);
+      // Si le nombre de jours déjà cochés ne correspond plus à la nouvelle
+      // fréquence, on vide pour forcer un choix explicite.
+      if ((d.walkDays || []).length !== newFreq) {
+        d.walkDays = [];
+        if (dogCard) dogCard.querySelectorAll('[data-dog-chips] .day-chip').forEach(c => c.classList.remove('active'));
+      }
+      d.isTrial = false;
+      d.trialDate = null;
+    });
+    updateFormuleDaysNote(formuleCard, targets, newFreq);
+  }
+
+  targets.forEach(d => {
+    const dogCard = document.querySelector(`.dog-detail-card[data-dog-id="${d.id}"]`);
+    if (dogCard) dogCard.querySelector('.dog-detail-status').textContent = dogDetailStatusLabel(d, draftClient);
+  });
+  updateValidateChangesState();
+}
+
+function updateFormuleDaysNote(formuleCard, targets, requiredFreq) {
+  const noteEl = formuleCard.querySelector('.dog-formule-note');
+  const allMatch = targets.every(d => {
+    const dogCard = document.querySelector(`.dog-detail-card[data-dog-id="${d.id}"]`);
+    const checked = dogCard ? dogCard.querySelectorAll('[data-dog-chips] .day-chip.active').length : 0;
+    return checked === requiredFreq;
+  });
+  if (allMatch) { noteEl.style.display = 'none'; return; }
+  const names = targets.map(d => d.name).join(' et ');
+  noteEl.textContent = `Sélectionne ${requiredFreq} jour${requiredFreq > 1 ? 's' : ''} de balade pour ${names} ci-dessous.`;
+  noteEl.style.display = 'block';
+}
+
+// Aperçu de l'impact "encaissement" d'un changement de formule pour un
+// foyer à 1 seul chien — utilisé dans le résumé de "Valider mes
+// changements", sans rien modifier.
+function computeFormuleBillingPreview(client, oldDog, newDog) {
+  const oldFormule = oldDog.isTrial ? 'test' : ((oldDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const newFormule = newDog.isTrial ? 'test' : ((newDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const oldFreq = (oldDog.walkDays || []).length;
+  const newFreq = (newDog.walkDays || []).length;
+  if (oldFormule === newFormule && oldFreq === newFreq) return null;
+
+  if (newFormule === 'aucun') return "L'abonnement sera arrêté (planning vidé), sans nouvel encaissement.";
+  if (newFormule === 'test') return "Passage en balade test (planning vidé) — ajoute l'encaissement de la balade séparément si besoin.";
+  if (newFreq === 0) return null; // jours pas encore choisis
+  const code = `seul-${newFreq}`;
+  const monthlyPrice = tarifValue(code);
+  const newPrice = proratedMonthlyAmountFromToday(monthlyPrice);
+  const currentEntry = findCurrentSubEntry(client.id);
+  if (currentEntry && currentEntry.paid === false) {
+    return `L'encaissement existant (pas encore réglé) sera mis à jour à ${fmt(newPrice)}.`;
+  }
+  const alreadyPaid = currentEntry ? currentEntry.amount : 0;
+  const delta = Math.max(0, newPrice - alreadyPaid);
+  return delta > 0
+    ? `${fmt(alreadyPaid)} déjà réglé, ${fmt(delta)} à régler pour ce changement (nouvel encaissement en attente).`
+    : `Déjà couvert par le paiement existant (${fmt(alreadyPaid)}) — aucun nouvel encaissement nécessaire.`;
+}
+
+// Applique réellement l'impact "encaissement" d'un changement de formule —
+// appelée au moment d'"Enregistrer" dans la modale de confirmation,
+// seulement pour un foyer à 1 seul chien (sinon ambiguïté sur l'encaissement
+// à modifier).
+function applyFormuleBillingChange(client, oldDog, newDog) {
+  const oldFormule = oldDog.isTrial ? 'test' : ((oldDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const newFormule = newDog.isTrial ? 'test' : ((newDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const oldFreq = (oldDog.walkDays || []).length;
+  const newFreq = (newDog.walkDays || []).length;
+  if (oldFormule === newFormule && oldFreq === newFreq) return;
+  if (newFormule !== 'seul') return;
+
+  const modDate = modificationDateWithinActiveMonth();
+  const code = `seul-${newFreq}`;
+  const monthlyPrice = tarifValue(code);
+  const newPrice = proratedMonthlyAmountFromToday(monthlyPrice);
+  const currentEntry = findCurrentSubEntry(client.id);
+  if (currentEntry && currentEntry.paid === false) {
+    currentEntry.date = modDate;
+    currentEntry.amount = newPrice;
+    currentEntry.formuleLabel = tarifNoteLabel(code);
+  } else {
+    const alreadyPaid = currentEntry ? currentEntry.amount : 0;
+    const delta = Math.max(0, newPrice - alreadyPaid);
+    if (delta > 0) {
+      entries.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        date: modDate,
+        amount: delta,
+        note: '',
+        clientId: client.id,
+        paid: false,
+        formuleLabel: tarifNoteLabel(code) + ' (changement de formule)'
+      });
+    }
+  }
+  newDog.subscriptionSince = modDate;
+}
+
+function renderDogDetailCard(draftClient, dog) {
+  const walkDays = dog.walkDays || [];
+  const isEditableSchedule = !draftClient.archived && !dog.isTrial;
+  const status = dogDetailStatusLabel(dog, draftClient);
+  const daysHtml = isEditableSchedule
+    ? `<div class="day-chips" data-dog-chips="${dog.id}">${WEEKDAYS.map(d =>
+        `<div class="day-chip ${walkDays.includes(d.code) ? 'active' : ''}" data-day="${d.code}" title="${d.full}">${d.label}</div>`
+      ).join('')}</div>`
+    : '';
+  const photoContent = dog.photo
+    ? `<img src="${dog.photo}" alt="">`
+    : `<span class="dog-photo-placeholder">🐾</span>`;
+
+  // Radio pour cibler ce chien : uniquement utile pour un foyer à 2 chiens,
+  // quand la formule "1 chien" doit s'appliquer à l'un des deux en
+  // particulier (la carte "Abonnement" est commune aux deux chiens).
+  const radioHtml = draftClient.dogs.length === 2
+    ? `<label class="dog-target-radio" title="Cibler ce chien pour l'abonnement">
+        <input type="radio" name="dog-formule-target" value="${dog.id}" class="dog-formule-target-radio" ${clientDetailFormuleTargetDogId === dog.id ? 'checked' : ''}>
+      </label>`
+    : '';
+
+  return `
+    <div class="dog-detail-card" data-dog-id="${dog.id}">
+      <div class="dog-detail-header">
+        ${radioHtml}
+        <div class="dog-photo-picker" data-dog-photo-picker="${dog.id}" title="Ajouter une photo">
+          ${photoContent}
+        </div>
+        <input type="file" accept="image/*" class="dog-photo-input" data-dog-photo-input="${dog.id}" style="display:none;">
+        <div class="dog-detail-fields">
+          <input type="text" class="cd-dog-name-input" value="${escapeHtml(dog.name)}" placeholder="Nom du chien">
+          ${dog.photo ? `<button type="button" class="dog-photo-remove" data-dog-photo-remove="${dog.id}">Retirer la photo</button>` : ''}
+        </div>
+      </div>
+      <div class="dog-detail-status">${status}</div>
+      ${daysHtml}
+    </div>
+  `;
+}
+
+// Carte "Abonnement" (Formule + Fréquence), commune au foyer — affichée une
+// seule fois au-dessus des cartes chien, pas par chien.
+// Déduit la formule/fréquence actuellement en place pour le foyer, à
+// utiliser une seule fois (à l'ouverture) pour initialiser l'affichage —
+// ensuite c'est clientDetailFormuleSelection qui fait foi, pour ne pas
+// "perdre" la sélection en cours quand on change de chien ciblé via le
+// radio (un chien nouvellement ciblé n'a souvent encore aucune donnée).
+function deriveFormuleSelection(draftClient) {
+  const isExistingDeux = draftClient.dogs.length === 2 && draftClient.subscriptionType === 'deux' &&
+    draftClient.dogs.every(d => !d.isTrial && (d.walkDays || []).length > 0);
+  if (isExistingDeux) {
+    return { formule: 'deux', freq: draftClient.dogs[0].walkDays.length || 1 };
+  }
+  const singleDog = draftClient.dogs.length === 1 ? draftClient.dogs[0] : null;
+  const targetDog = singleDog || getDogById(draftClient, clientDetailFormuleTargetDogId) || draftClient.dogs[0];
+  const formule = targetDog.isTrial ? 'test' : ((targetDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const freq = (targetDog.walkDays || []).length || 1;
+  return { formule, freq };
+}
+
+function renderAbonnementCard(draftClient) {
+  if (draftClient.archived) return '';
+  if (!clientDetailFormuleSelection) clientDetailFormuleSelection = deriveFormuleSelection(draftClient);
+  const { formule: currentFormule, freq: currentFreq } = clientDetailFormuleSelection;
+  const deuxDisabled = draftClient.dogs.length < 2;
+
+  return `
+    <div class="dog-formule-card">
+      <div class="dog-formule-row">
+        <div>
+          <label>Formule</label>
+          <select class="dog-formule-select">
+            <option value="aucun" ${currentFormule === 'aucun' ? 'selected' : ''}>Aucun abonnement</option>
+            <option value="test" ${currentFormule === 'test' ? 'selected' : ''}>Balade test</option>
+            <option value="seul" ${currentFormule === 'seul' ? 'selected' : ''}>Abonnement — 1 chien</option>
+            <option value="deux" ${currentFormule === 'deux' ? 'selected' : ''} ${deuxDisabled ? 'disabled title="Il faut un 2e chien pour cette formule"' : ''}>Abonnement — 2 chiens</option>
+          </select>
+        </div>
+        <div class="dog-formule-freq-wrap" style="display:${(currentFormule === 'seul' || currentFormule === 'deux') ? 'block' : 'none'};">
+          <label>Fréquence</label>
+          <select class="dog-formule-freq-select">
+            ${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === currentFreq ? 'selected' : ''}>${n}x/semaine</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="note dog-formule-note" style="display:none;"></div>
+    </div>
+  `;
+}
+
+function getDraftDogById(dogId) {
+  return clientDetailDraft ? getDogById(clientDetailDraft, dogId) : null;
+}
+
+// Attache les clics sur les pastilles de jours actuellement présentes dans
+// la carte (utilisé au rendu initial ET après une injection dynamique).
+function bindDayChips(card, dogId, draftClient) {
+  card.querySelectorAll('[data-dog-chips] .day-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const d = getDraftDogById(dogId);
+      if (!d) return;
+      if (!d.walkDays) d.walkDays = [];
+      const day = chip.dataset.day;
+      const idx = d.walkDays.indexOf(day);
+      if (idx === -1) d.walkDays.push(day); else d.walkDays.splice(idx, 1);
+      chip.classList.toggle('active');
+      card.querySelector('.dog-detail-status').textContent = dogDetailStatusLabel(d, draftClient);
+      updateValidateChangesState();
+      const formuleCard = document.querySelector('.dog-formule-card');
+      if (formuleCard) {
+        const formuleSel = formuleCard.querySelector('.dog-formule-select');
+        const freqSel = formuleCard.querySelector('.dog-formule-freq-select');
+        if (formuleSel.value === 'seul' || formuleSel.value === 'deux') {
+          const targets = getFormuleTargetDogs(draftClient, formuleSel.value);
+          updateFormuleDaysNote(formuleCard, targets, parseInt(freqSel.value) || 1);
+        }
+      }
+    });
+  });
+}
+
+// Si on passe la Formule à "Abonnement" alors qu'aucun sélecteur de jours
+// n'était encore affiché (ex: chien qui était en balade test), on l'injecte
+// à la volée pour permettre de choisir les jours avant de confirmer.
+function ensureDayChipsForDog(card, dogId, draftClient) {
+  if (card.querySelector('[data-dog-chips]')) return;
+  const daysHtml = `<div class="day-chips" data-dog-chips="${dogId}">${WEEKDAYS.map(d =>
+    `<div class="day-chip" data-day="${d.code}" title="${d.full}">${d.label}</div>`
+  ).join('')}</div>`;
+  card.insertAdjacentHTML('beforeend', daysHtml);
+  bindDayChips(card, dogId, draftClient);
+}
+
+function renderClientDetailDogs(draftClient) {
+  const section = document.getElementById('cd-dogs-section');
+  section.innerHTML = renderAbonnementCard(draftClient) + draftClient.dogs.map(d => renderDogDetailCard(draftClient, d)).join('');
+
+  const formuleCard = section.querySelector('.dog-formule-card');
+  if (formuleCard) {
+    const formuleSel = formuleCard.querySelector('.dog-formule-select');
+    const freqSel = formuleCard.querySelector('.dog-formule-freq-select');
+    const onFormuleOrFreqChange = () => handleDogFormuleOrFreqChange(formuleCard, draftClient);
+    formuleSel.addEventListener('change', onFormuleOrFreqChange);
+    freqSel.addEventListener('change', onFormuleOrFreqChange);
+  }
+
+  section.querySelectorAll('.dog-formule-target-radio').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const prevTargetId = clientDetailFormuleTargetDogId;
+      const newTargetId = radio.value;
+      if (prevTargetId === newTargetId) return;
+
+      const { formule, freq } = clientDetailFormuleSelection || {};
+      // On "transfère" l'abonnement en cours vers le chien nouvellement
+      // ciblé : on vide l'ancien (sauf s'il n'y avait rien à transférer),
+      // et on prépare le nouveau pour ce même type de formule — les jours
+      // précis restent à choisir pour le nouveau chien.
+      if (formule && formule !== 'aucun' && formule !== 'deux') {
+        const prevDog = getDogById(clientDetailDraft, prevTargetId);
+        if (prevDog) { prevDog.walkDays = []; prevDog.isTrial = false; prevDog.trialDate = null; }
+        const newDog = getDogById(clientDetailDraft, newTargetId);
+        if (newDog && formule === 'test') { newDog.isTrial = true; newDog.trialDate = newDog.trialDate || todayISO(); }
+      }
+      clientDetailFormuleTargetDogId = newTargetId;
+      renderClientDetailDogs(clientDetailDraft);
+      updateValidateChangesState();
+      if (formule === 'seul' || formule === 'deux') {
+        const newFormuleCard = document.querySelector('.dog-formule-card');
+        if (newFormuleCard) {
+          const targets = getFormuleTargetDogs(clientDetailDraft, formule);
+          updateFormuleDaysNote(newFormuleCard, targets, freq || 1);
+        }
+      }
+    });
+  });
+
+  section.querySelectorAll('.dog-detail-card').forEach(card => {
+    const dogId = card.dataset.dogId;
+    const nameInput = card.querySelector('.cd-dog-name-input');
+    nameInput.addEventListener('change', () => {
+      const d = getDraftDogById(dogId);
+      if (!d) return;
+      const val = nameInput.value.trim();
+      if (!val) return;
+      d.name = val;
+      document.getElementById('client-detail-title').textContent = clientLabel(clientDetailDraft);
+      updateValidateChangesState();
+    });
+
+    bindDayChips(card, dogId, draftClient);
+
+    const photoPicker = card.querySelector('.dog-photo-picker');
+    const photoInput = card.querySelector('.dog-photo-input');
+    photoPicker.addEventListener('click', () => photoInput.click());
+    photoInput.addEventListener('change', async () => {
+      const file = photoInput.files && photoInput.files[0];
+      if (!file) return;
+      try {
+        const dataUrl = await cropImageToSquareDataUrl(file);
+        const d = getDraftDogById(dogId);
+        if (!d) return;
+        d.photo = dataUrl;
+        renderClientDetailDogs(clientDetailDraft);
+        updateValidateChangesState();
+      } catch (err) {
+        console.error('Échec du traitement de la photo', err);
+      }
+    });
+
+    const removeBtn = card.querySelector('.dog-photo-remove');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        const d = getDraftDogById(dogId);
+        if (!d) return;
+        d.photo = null;
+        renderClientDetailDogs(clientDetailDraft);
+        updateValidateChangesState();
+      });
+    }
+  });
+
+  const addBtn = document.getElementById('cd-add-second-dog');
+  addBtn.style.display = (!draftClient.archived && draftClient.dogs.length < 2) ? 'block' : 'none';
+}
+
+// Construit la liste lisible des changements en attente (brouillon vs état
+// d'origine), affichée avant toute sauvegarde.
+function buildClientChangesSummary() {
+  const lines = [];
+  if (!clientDetailSnapshot || !clientDetailDraft) return lines;
+
+  if (clientDetailSnapshot.ownerName !== clientDetailDraft.ownerName) {
+    lines.push(`Nom du maître : ${escapeHtml(clientDetailSnapshot.ownerName)} → ${escapeHtml(clientDetailDraft.ownerName)}`);
+  }
+
+  const contactFieldLabels = {
+    address: 'Adresse',
+    buildingCode: 'Code immeuble',
+    floor: 'Étage',
+    phonePrimary: 'Numéro principal',
+    conjointPrenom: 'Prénom du conjoint',
+    conjointPhone: 'Numéro du conjoint'
+  };
+  Object.keys(contactFieldLabels).forEach(key => {
+    const before = clientDetailSnapshot[key] || null;
+    const after = clientDetailDraft[key] || null;
+    if (before !== after) {
+      const beforeText = before ? escapeHtml(before) : 'vide';
+      const afterText = after ? escapeHtml(after) : 'retiré';
+      lines.push(`${contactFieldLabels[key]} : ${beforeText} → ${afterText}`);
+    }
+  });
+
+  const snapshotDogsById = Object.fromEntries(clientDetailSnapshot.dogs.map(d => [d.id, d]));
+  clientDetailDraft.dogs.forEach(dd => {
+    const sd = snapshotDogsById[dd.id];
+    if (!sd) {
+      lines.push(`🐶 Nouveau chien ajouté : ${escapeHtml(dd.name)}`);
+      return;
+    }
+    if (sd.name !== dd.name) {
+      lines.push(`${escapeHtml(sd.name)} — nom : ${escapeHtml(sd.name)} → ${escapeHtml(dd.name)}`);
+    }
+    if (JSON.stringify(sd.walkDays || []) !== JSON.stringify(dd.walkDays || [])) {
+      lines.push(`${escapeHtml(dd.name)} — jours : ${dayLabelsFr(sd.walkDays)} → ${dayLabelsFr(dd.walkDays)}`);
+    }
+    if ((sd.photo || null) !== (dd.photo || null)) {
+      lines.push(`${escapeHtml(dd.name)} — photo : ${dd.photo ? (sd.photo ? 'modifiée' : 'ajoutée') : 'retirée'}`);
+    }
+    if (clientDetailDraft.dogs.length === 1) {
+      const billingText = computeFormuleBillingPreview(clientDetailDraft, sd, dd);
+      if (billingText) lines.push(`💳 ${billingText}`);
+    }
+  });
+
+  return lines;
+}
+function hasPendingClientChanges() {
+  if (!clientDetailSnapshot || !clientDetailDraft) return false;
+  return JSON.stringify(clientDetailSnapshot) !== JSON.stringify(clientDetailDraft);
+}
+function updateValidateChangesState() {
+  const btn = document.getElementById('cd-validate-changes');
+  btn.disabled = !hasPendingClientChanges();
+}
+
+// Remplit les nouveaux champs de coordonnées (adresse, conjoint, téléphones)
+// et gère l'affichage conditionnel du bloc conjoint / téléphone conjoint.
+function renderClientContactFields(draft) {
+  document.getElementById('cd-address').value = draft.address || '';
+  document.getElementById('cd-building-code').value = draft.buildingCode || '';
+  document.getElementById('cd-floor').value = draft.floor || '';
+  document.getElementById('cd-phone-primary').value = draft.phonePrimary || '';
+  document.getElementById('cd-phone-primary-wa').disabled = !draft.phonePrimary;
+
+  const hasConjoint = draft.conjointPrenom !== null && draft.conjointPrenom !== undefined;
+  document.getElementById('cd-conjoint-add-wrap').style.display = hasConjoint ? 'none' : 'block';
+  document.getElementById('cd-conjoint-section').style.display = hasConjoint ? 'block' : 'none';
+  document.getElementById('cd-phone-conjoint-wrap').style.display = hasConjoint ? 'block' : 'none';
+  document.getElementById('cd-conjoint-prenom').value = draft.conjointPrenom || '';
+  document.getElementById('cd-phone-conjoint').value = draft.conjointPhone || '';
+  document.getElementById('cd-phone-conjoint-wa').disabled = !draft.conjointPhone;
+}
+
+// Convertit un numéro français (souvent saisi avec un 0 initial) au format
+// international attendu par les liens WhatsApp (wa.me), sans "+" ni espaces.
+function formatPhoneForWhatsApp(raw) {
+  const digits = (raw || '').replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.startsWith('0')) return '33' + digits.slice(1);
+  return digits;
+}
+
+// Remplit l'onglet "Encaissements" de la fiche client (total, nombre,
+// historique) — appelée à l'ouverture, et à nouveau après un changement de
+// formule qui touche les encaissements.
+function refreshClientDetailPaymentsTab() {
+  if (!clientDetailId) return;
+  const clientEntries = entries.filter(e => e.clientId === clientDetailId).sort((a, b) => b.date.localeCompare(a.date));
+  const totalRevenue = clientEntries.reduce((s, e) => s + e.amount, 0);
+  document.getElementById('cd-total-revenue').textContent = fmt(totalRevenue);
+  document.getElementById('cd-entry-count').textContent = clientEntries.length;
+
+  const entriesList = document.getElementById('cd-entries-list');
+  entriesList.innerHTML = clientEntries.length > 0
+    ? clientEntries.map(e => {
+        const isPaid = e.paid !== false;
+        return `
+        <div class="entry-row">
+          <div class="entry-row-content">
+            <div class="entry-row-top">
+              <span class="meta">${new Date(e.date).toLocaleDateString('fr-FR')}</span>
+              <span class="amount">${fmt(e.amount)}</span>
+            </div>
+            <div class="entry-row-bottom">
+              <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}</span>
+              <span class="paid-toggle ${isPaid ? 'paid' : 'pending'}" style="cursor:default;">${isPaid ? '✅ Reçu' : '⏳ En attente'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      }).join('')
+    : '<div class="empty">Aucun encaissement pour ce client.</div>';
+}
+
+function openClientDetail(id) {
+  const client = getClientById(id);
+  if (!client) return;
+  clientDetailId = id;
+  clientDetailSnapshot = JSON.parse(JSON.stringify(client));
+  clientDetailDraft = JSON.parse(JSON.stringify(client));
+  const activeDog = client.dogs.find(d => !d.isTrial && (d.walkDays || []).length > 0) || client.dogs[0];
+  clientDetailFormuleTargetDogId = activeDog ? activeDog.id : null;
+  clientDetailFormuleSelection = deriveFormuleSelection(clientDetailDraft);
+
+  document.querySelectorAll('.subtab[data-group="fiche-client"]').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.subpanel[data-group="fiche-client"]').forEach(p => p.classList.remove('active'));
+  document.querySelector('.subtab[data-group="fiche-client"][data-subpanel="cd-general"]').classList.add('active');
+  document.getElementById('subpanel-cd-general').classList.add('active');
+
+  document.getElementById('client-detail-title').textContent = clientLabel(clientDetailDraft);
+  document.getElementById('cd-owner-name').value = clientDetailDraft.ownerName;
+  renderClientContactFields(clientDetailDraft);
+  renderClientDetailDogs(clientDetailDraft);
+  updateValidateChangesState();
+
+  refreshClientDetailPaymentsTab();
+
+  document.getElementById('cd-toggle-archive').textContent = client.archived ? 'Réactiver' : 'Archiver';
+
+  clientDetailOverlay.classList.add('open');
+  clientDetailModal.classList.add('open');
+  clientDetailModal.setAttribute('aria-hidden', 'false');
+}
+
+// Ferme réellement la fiche (sans vérifier les changements en attente —
+// utilisé une fois que la décision a été prise : enregistrer ou abandonner).
+function closeClientDetailForce() {
+  clientDetailOverlay.classList.remove('open');
+  clientDetailModal.classList.remove('open');
+  clientDetailModal.setAttribute('aria-hidden', 'true');
+  clientDetailId = null;
+  clientDetailSnapshot = null;
+  clientDetailDraft = null;
+}
+
+// Point d'entrée pour fermer la fiche (croix ou clic en dehors) : si des
+// changements sont en attente, on demande confirmation avant de fermer.
+function requestCloseClientDetail() {
+  if (hasPendingClientChanges()) {
+    openClientChangesModal();
+  } else {
+    closeClientDetailForce();
+  }
+}
+
+document.getElementById('cd-close').addEventListener('click', requestCloseClientDetail);
+clientDetailOverlay.addEventListener('click', requestCloseClientDetail);
+
+document.getElementById('cd-owner-name').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  const val = ev.target.value.trim();
+  if (!val) return;
+  clientDetailDraft.ownerName = val;
+  document.getElementById('client-detail-title').textContent = clientLabel(clientDetailDraft);
+  updateValidateChangesState();
+});
+
+document.getElementById('cd-address').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.address = ev.target.value.trim() || null;
+  updateValidateChangesState();
+});
+document.getElementById('cd-building-code').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.buildingCode = ev.target.value.trim() || null;
+  updateValidateChangesState();
+});
+document.getElementById('cd-floor').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.floor = ev.target.value.trim() || null;
+  updateValidateChangesState();
+});
+// Filtre les champs téléphone pour n'accepter que des chiffres, en temps réel.
+function digitsOnlyFilter(ev) {
+  const cleaned = ev.target.value.replace(/\D/g, '');
+  if (cleaned !== ev.target.value) ev.target.value = cleaned;
+}
+document.getElementById('cd-phone-primary').addEventListener('input', (ev) => {
+  digitsOnlyFilter(ev);
+  document.getElementById('cd-phone-primary-wa').disabled = !ev.target.value;
+});
+document.getElementById('cd-phone-conjoint').addEventListener('input', (ev) => {
+  digitsOnlyFilter(ev);
+  document.getElementById('cd-phone-conjoint-wa').disabled = !ev.target.value;
+});
+
+document.getElementById('cd-phone-primary-wa').addEventListener('click', () => {
+  const phone = formatPhoneForWhatsApp(document.getElementById('cd-phone-primary').value);
+  if (phone) window.open(`https://wa.me/${phone}`, '_blank');
+});
+document.getElementById('cd-phone-conjoint-wa').addEventListener('click', () => {
+  const phone = formatPhoneForWhatsApp(document.getElementById('cd-phone-conjoint').value);
+  if (phone) window.open(`https://wa.me/${phone}`, '_blank');
+});
+
+document.getElementById('cd-phone-primary').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.phonePrimary = ev.target.value.trim() || null;
+  updateValidateChangesState();
+});
+document.getElementById('cd-phone-conjoint').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.conjointPhone = ev.target.value.trim() || null;
+  updateValidateChangesState();
+});
+document.getElementById('cd-conjoint-prenom').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.conjointPrenom = ev.target.value.trim();
+  updateValidateChangesState();
+});
+document.getElementById('cd-add-conjoint').addEventListener('click', () => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.conjointPrenom = '';
+  renderClientContactFields(clientDetailDraft);
+  document.getElementById('cd-conjoint-prenom').focus();
+  updateValidateChangesState();
+});
+document.getElementById('cd-remove-conjoint').addEventListener('click', () => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.conjointPrenom = null;
+  clientDetailDraft.conjointPhone = null;
+  renderClientContactFields(clientDetailDraft);
+  updateValidateChangesState();
+});
+
+document.getElementById('cd-add-second-dog').addEventListener('click', () => {
+  if (!clientDetailDraft || clientDetailDraft.dogs.length >= 2) return;
+  clientDetailDraft.dogs.push({ id: newDogId(clientDetailDraft), name: 'Nouveau chien', walkDays: [], isTrial: false, trialDate: null });
+  renderClientDetailDogs(clientDetailDraft);
+  updateValidateChangesState();
+});
+
+document.getElementById('cd-validate-changes').addEventListener('click', () => {
+  if (hasPendingClientChanges()) openClientChangesModal();
+});
+
+document.getElementById('cd-toggle-archive').addEventListener('click', async () => {
+  const c = getClientById(clientDetailId);
+  if (!c) return;
+  c.archived = !c.archived;
+  await saveClients();
+  closeClientDetailForce();
+  render();
+});
+
+// Modale de confirmation des changements en attente
+const clientChangesOverlay = document.getElementById('client-changes-overlay');
+const clientChangesModal = document.getElementById('client-changes-modal');
+
+function openClientChangesModal() {
+  const summary = document.getElementById('client-changes-summary');
+  const lines = buildClientChangesSummary();
+  summary.innerHTML = lines.length > 0
+    ? lines.map(l => `<div>${l}</div>`).join('')
+    : '<div>Aucun changement détecté.</div>';
+  clientChangesOverlay.classList.add('open');
+  clientChangesModal.classList.add('open');
+  clientChangesModal.setAttribute('aria-hidden', 'false');
+}
+function closeClientChangesModal() {
+  clientChangesOverlay.classList.remove('open');
+  clientChangesModal.classList.remove('open');
+  clientChangesModal.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('client-changes-cancel').addEventListener('click', closeClientChangesModal);
+clientChangesOverlay.addEventListener('click', closeClientChangesModal);
+
+document.getElementById('client-changes-save').addEventListener('click', async () => {
+  const realClient = getClientById(clientDetailId);
+  if (realClient && clientDetailDraft) {
+    realClient.ownerName = clientDetailDraft.ownerName;
+    realClient.address = clientDetailDraft.address || null;
+    realClient.buildingCode = clientDetailDraft.buildingCode || null;
+    realClient.floor = clientDetailDraft.floor || null;
+    realClient.phonePrimary = clientDetailDraft.phonePrimary || null;
+    realClient.conjointPrenom = clientDetailDraft.conjointPrenom !== undefined ? clientDetailDraft.conjointPrenom : null;
+    realClient.conjointPhone = clientDetailDraft.conjointPhone || null;
+    realClient.dogs = clientDetailDraft.dogs.map(d => ({ ...d }));
+    realClient.subscriptionType = clientDetailDraft.subscriptionType;
+
+    // Foyer à 1 seul chien : si la formule/fréquence a changé, on gère
+    // l'encaissement correspondant (mise à jour ou nouvel encaissement).
+    if (clientDetailSnapshot.dogs.length === 1 && realClient.dogs.length === 1) {
+      applyFormuleBillingChange(realClient, clientDetailSnapshot.dogs[0], realClient.dogs[0]);
+      await saveEntries();
+    }
+
+    await saveClients();
+  }
+  closeClientChangesModal();
+  closeClientDetailForce();
+  render();
+});
+
+document.getElementById('client-changes-discard').addEventListener('click', () => {
+  closeClientChangesModal();
+  closeClientDetailForce();
+  render();
+});
+
+function allActiveDogs() {
+  // Liste tous les (client, chien) pour les foyers non archivés.
+  const list = [];
+  clients.filter(c => !c.archived).forEach(c => {
+    (c.dogs || []).forEach(d => list.push({ client: c, dog: d }));
+  });
+  return list;
+}
+function perDogLabel(client, dog) {
+  return `🐶 ${dog.name} · 👤 ${client.ownerName}`;
+}
+
+// Correspondance entre le jour JS (0=dimanche...6=samedi) et les codes de
+// jours ouvrés utilisés dans l'app (pas de code pour le week-end).
+const DOW_CODE_BY_JS_DAY = { 1: 'lun', 2: 'mar', 3: 'mer', 4: 'jeu', 5: 'ven' };
+let planningWeekStart = null; // lundi (ISO) de la semaine actuellement affichée
+
+function mondayOfWeek(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay(); // 0=dim, 1=lun, ..., 6=sam
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMonday);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function shiftPlanningWeek(deltaWeeks) {
+  const d = new Date(planningWeekStart + 'T00:00:00');
+  d.setDate(d.getDate() + deltaWeeks * 7);
+  planningWeekStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  renderWeekView();
+}
+
+// Vue "Cette semaine" : combine, pour chaque jour ouvré avec sa vraie date,
+// les abonnements récurrents (selon le jour de semaine) et les balades
+// test ponctuelles (selon leur date exacte).
+function renderWeekView() {
+  if (!planningWeekStart) planningWeekStart = mondayOfWeek(todayISO());
+  const monday = new Date(planningWeekStart + 'T00:00:00');
+  const todayStr = todayISO();
+
+  const weekDates = WEEKDAYS.map((wd, i) => {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { code: wd.code, full: wd.full, dateStr, dayNum: d.getDate() };
+  });
+
+  const friday = new Date(monday);
+  friday.setDate(friday.getDate() + 4);
+  const rangeLabel = `${monday.getDate()} ${monday.toLocaleDateString('fr-FR', { month: 'short' })} – ${friday.getDate()} ${friday.toLocaleDateString('fr-FR', { month: 'short' })}`;
+  document.getElementById('week-view-range-label').textContent = rangeLabel;
+
+  const container = document.getElementById('week-view-list');
+  container.innerHTML = weekDates.map(({ code, full, dateStr, dayNum }) => {
+    const recurringPairs = allActiveDogs()
+      .filter(({ dog }) => !dog.isTrial && (dog.walkDays || []).includes(code))
+      .map(p => ({ ...p, kind: 'abonnement' }));
+    const trialPairs = allActiveDogs()
+      .filter(({ dog }) => dog.isTrial && dog.trialDate === dateStr)
+      .map(p => ({ ...p, kind: 'test' }));
+    const pairs = [...recurringPairs, ...trialPairs]
+      .sort((a, b) => perDogLabel(a.client, a.dog).localeCompare(perDogLabel(b.client, b.dog)));
+    const isToday = dateStr === todayStr;
+    const chipsHtml = pairs.length > 0
+      ? pairs.map(({ client, dog, kind }) => `<span class="planning-client-chip${kind === 'test' ? ' trial' : ''}">${escapeHtml(perDogLabel(client, dog))}</span>`).join('')
+      : '<div class="empty" style="padding:16px;">Aucun chien ce jour-là.</div>';
+    return `
+      <div class="planning-day-card${isToday ? ' planning-day-today' : ''}">
+        <div class="planning-day-header">
+          <span>${full} ${dayNum}${isToday ? " · aujourd'hui" : ''}</span>
+          <span class="count">${pairs.length} chien${pairs.length > 1 ? 's' : ''}</span>
+        </div>
+        <div>${chipsHtml}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPlanning() {
+  renderWeekView();
+  renderTrialWalks();
+}
+
+function renderTrialWalks() {
+  const container = document.getElementById('planning-trials');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const trials = allActiveDogs()
+    .filter(({ dog }) => dog.isTrial && dog.trialDate && dog.trialDate >= todayStr)
+    .sort((a, b) => a.dog.trialDate.localeCompare(b.dog.trialDate));
+
+  if (trials.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  const rows = trials.map(({ client, dog }) => {
+    const d = new Date(dog.trialDate + 'T00:00:00');
+    const dateLabel = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    return `
+      <div class="trial-row">
+        <span class="trial-name">${escapeHtml(perDogLabel(client, dog))}</span>
+        <span class="trial-date">${dateLabel}</span>
+      </div>
+    `;
+  }).join('');
+  container.innerHTML = `<div class="section-title" style="margin-top:0;">Balades test à venir</div>${rows}`;
+}
+
+function tarifValue(code) {
+  const t = settings.tarifs;
+  if (code === 'test') return t.test;
+  const m = code.match(/^(seul|deux)-(\d)$/);
+  if (!m) return null;
+  return t[m[1]][parseInt(m[2]) - 1];
+}
+function tarifNoteLabel(code) {
+  if (code === 'test') return 'Balade test';
+  const m = code.match(/^(seul|deux)-(\d)$/);
+  if (!m) return '';
+  const chiens = m[1] === 'seul' ? '1 chien' : '2 chiens';
+  return `Abonnement ${m[2]}x/semaine (${chiens})`;
+}
+function tarifRequiredDays(code) {
+  const m = code.match(/^(seul|deux)-(\d)$/);
+  if (!m) return null;
+  return parseInt(m[2]);
+}
+function populateFormuleSelect() {
+  const select = document.getElementById('f-formule');
+  select.innerHTML = `
+    <option value="custom">— Sélectionner —</option>
+    <option value="test">Balade test</option>
+    <option value="seul">Abonnement 1 chien</option>
+    <option value="deux">Abonnement 2 chiens</option>
+  `;
+  select.value = 'custom';
+}
+function populateFrequenceSelect() {
+  const formule = document.getElementById('f-formule').value;
+  const container = document.getElementById('frequence-container');
+  const select = document.getElementById('f-frequence');
+  if (formule !== 'seul' && formule !== 'deux') {
+    container.style.display = 'none';
+    select.innerHTML = '';
+    return;
+  }
+  const t = settings.tarifs;
+  const prices = formule === 'deux' ? t.deux : t.seul;
+  select.innerHTML = prices.map((price, idx) =>
+    `<option value="${idx + 1}">${idx + 1}x/semaine — ${fmt(price)}/mois</option>`
+  ).join('');
+  select.value = '1';
+  container.style.display = 'block';
+}
+// Reconstruit le code tarif interne ('test' / 'custom' / 'seul-N' / 'deux-N')
+// à partir des deux champs "Formule" + "Fréquence".
+function getTarifCode() {
+  const formule = document.getElementById('f-formule').value;
+  if (formule === 'custom' || formule === 'test') return formule;
+  const freq = document.getElementById('f-frequence').value;
+  return formule + '-' + (freq || '1');
+}
+
+const WEEKDAY_JSINDEX = { lun: 1, mar: 2, mer: 3, jeu: 4, ven: 5 };
+
+// Compte combien de fois chaque jour choisi tombe entre la date de départ
+// (incluse) et la fin de ce même mois calendaire (incluse).
+function occurrencesUntilMonthEnd(dayCodes, dateStr) {
+  if (!dateStr || !dayCodes || dayCodes.length === 0) return 0;
+  const start = new Date(dateStr + 'T00:00:00');
+  const year = start.getFullYear();
+  const month = start.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const targetIndexes = dayCodes.map(c => WEEKDAY_JSINDEX[c]);
+  let count = 0;
+  for (let day = start.getDate(); day <= lastDay; day++) {
+    const d = new Date(year, month, day);
+    if (targetIndexes.includes(d.getDay())) count++;
+  }
+  return count;
+}
+
+// Compte combien de fois chaque jour choisi tombe dans TOUT le mois calendaire
+// (du 1er au dernier jour) — sert de base réelle pour le prix, pour qu'un
+// abonnement démarré le 1er du mois coûte toujours exactement le prix plein,
+// que ce mois compte 4 ou 5 occurrences de ce jour de semaine.
+function occurrencesInFullMonth(dayCodes, dateStr) {
+  if (!dateStr || !dayCodes || dayCodes.length === 0) return 0;
+  const start = new Date(dateStr + 'T00:00:00');
+  const year = start.getFullYear();
+  const month = start.getMonth();
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const targetIndexes = dayCodes.map(c => WEEKDAY_JSINDEX[c]);
+  let count = 0;
+  for (let day = 1; day <= lastDay; day++) {
+    const d = new Date(year, month, day);
+    if (targetIndexes.includes(d.getDay())) count++;
+  }
+  return count;
+}
+
+// --- Sélecteur de chien (quand le foyer a déjà 2 chiens et qu'on choisit
+// un tarif "1 chien" ou une balade test) ---
+function currentFormClient() {
+  const clientChoice = document.getElementById('f-client').value;
+  if (!clientChoice || clientChoice === '__new__') return null;
+  return getClientById(clientChoice);
+}
+
+function renderDogPicker(client) {
+  const container = document.getElementById('dog-picker-container');
+  const chipsBox = document.getElementById('dog-picker-chips');
+  if (!client || client.dogs.length < 2) {
+    container.style.display = 'none';
+    chipsBox.innerHTML = '';
+    return;
+  }
+  const isTestMulti = getTarifCode() === 'test';
+  container.style.display = 'block';
+  chipsBox.innerHTML = client.dogs.map(d => {
+    const isSubscribed = !d.isTrial && (d.walkDays || []).length > 0;
+    const disabledAttrs = isSubscribed ? ' disabled title="Déjà abonné — pas de doublon possible"' : '';
+    return `<div class="day-chip dog-chip${isSubscribed ? ' dog-chip-disabled' : ''}" data-dog-id="${d.id}"${disabledAttrs}>${escapeHtml(d.name)}${isSubscribed ? ' 🔒' : ''}</div>`;
+  }).join('');
+  chipsBox.querySelectorAll('.dog-chip:not(.dog-chip-disabled)').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (isTestMulti) {
+        // Balade test : plusieurs chiens sélectionnables à la fois, le
+        // montant se multiplie par le nombre de chiens choisis.
+        chip.classList.toggle('active');
+        const count = chipsBox.querySelectorAll('.dog-chip.active').length;
+        const base = tarifValue('test');
+        if (count > 0 && base !== null) document.getElementById('f-amount').value = base * count;
+      } else {
+        chipsBox.querySelectorAll('.dog-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      }
+      // On ne reconstruit QUE la zone des jours ici, pas le sélecteur de
+      // chien lui-même — sinon le clic perdrait sa propre sélection.
+      renderWalkDaysArea();
+      refreshSubmitState();
+    });
+  });
+
+  // S'il ne reste qu'un seul chien sélectionnable (l'autre étant déjà
+  // abonné), on le présélectionne directement — pas besoin de cliquer sur
+  // la seule option valide.
+  const selectable = chipsBox.querySelectorAll('.dog-chip:not(.dog-chip-disabled)');
+  if (selectable.length === 1) selectable[0].classList.add('active');
+}
+function getSelectedDogPickerId() {
+  const active = document.querySelector('#dog-picker-chips .dog-chip.active');
+  return active ? active.dataset.dogId : null;
+}
+function getSelectedDogPickerIds() {
+  return [...document.querySelectorAll('#dog-picker-chips .dog-chip.active')].map(c => c.dataset.dogId);
+}
+
+// --- Groupe(s) de jours de balade ---
+function dayChipGroupHtml(slot, label, required, preselected) {
+  const chips = WEEKDAYS.map(d =>
+    `<div class="day-chip" data-day="${d.code}" title="${d.full}">${d.label}</div>`
+  ).join('');
+  return `
+    <div class="walk-day-group" data-slot="${slot}">
+      <label>${label}</label>
+      <div class="day-chips" data-slot-chips="${slot}">${chips}</div>
+      <div class="note" data-slot-hint="${slot}"></div>
+    </div>
+  `;
+}
+function getSelectedDaysForSlot(slot) {
+  return [...document.querySelectorAll(`[data-slot-chips="${slot}"] .day-chip.active`)].map(c => c.dataset.day);
+}
+function updateSlotHint(slot, required) {
+  const hint = document.querySelector(`[data-slot-hint="${slot}"]`);
+  if (!hint) return;
+  const current = getSelectedDaysForSlot(slot).length;
+  hint.textContent = current === required
+    ? `✓ ${required} jour${required > 1 ? 's' : ''} sélectionné${required > 1 ? 's' : ''}.`
+    : `Sélectionne ${required} jour${required > 1 ? 's' : ''} (${current}/${required}).`;
+}
+function bindSlotChips(slot, required, preselected) {
+  const box = document.querySelector(`[data-slot-chips="${slot}"]`);
+  if (!box) return;
+  (preselected || []).forEach(day => {
+    const chip = box.querySelector(`.day-chip[data-day="${day}"]`);
+    if (chip) chip.classList.add('active');
+  });
+  updateSlotHint(slot, required);
+  box.querySelectorAll('.day-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const isActive = chip.classList.contains('active');
+      const activeCount = getSelectedDaysForSlot(slot).length;
+      if (!isActive && activeCount >= required) return;
+      chip.classList.toggle('active');
+      updateSlotHint(slot, required);
+      recalcProratedAmount();
+      refreshSubmitState();
+    });
+  });
+}
+
+// Reconstruit uniquement la zone des groupes de jours (pas le sélecteur de
+// chien ni le champ "2e chien"), en fonction de l'état actuel du formulaire.
+function renderWalkDaysArea() {
+  const tarifCode = getTarifCode();
+  const requiredDays = tarifRequiredDays(tarifCode);
+  const client = currentFormClient();
+  const isDeux = tarifCode.startsWith('deux-');
+  const walkDaysContainer = document.getElementById('walk-days-container');
+  const walkDaysGroups = document.getElementById('walk-days-groups');
+
+  if (tarifCode === 'custom' || !requiredDays) {
+    walkDaysContainer.style.display = 'none';
+    walkDaysGroups.innerHTML = '';
+    return;
+  }
+
+  walkDaysContainer.style.display = 'block';
+
+  if (isDeux) {
+    const dog1 = client ? client.dogs[0] : null;
+    const dog2 = client ? client.dogs[1] : null;
+    const firstDogNameInput = document.getElementById('f-dog-name').value.trim();
+    const dog1Label = dog1 ? `Jours de balade — ${escapeHtml(dog1.name)}`
+      : `Jours de balade — ${firstDogNameInput ? escapeHtml(firstDogNameInput) : '1er chien'}`;
+    const secondDogNameInput = document.getElementById('f-second-dog-name').value.trim();
+    const dog2Label = dog2 ? `Jours de balade — ${escapeHtml(dog2.name)}`
+      : `Jours de balade — ${secondDogNameInput ? escapeHtml(secondDogNameInput) : '2e chien'}`;
+    walkDaysGroups.innerHTML =
+      dayChipGroupHtml('dog1', dog1Label, requiredDays, dog1 ? dog1.walkDays : []) +
+      dayChipGroupHtml('dog2', dog2Label, requiredDays, dog2 ? dog2.walkDays : []);
+    bindSlotChips('dog1', requiredDays, dog1 ? dog1.walkDays : []);
+    bindSlotChips('dog2', requiredDays, dog2 ? dog2.walkDays : []);
+  } else {
+    let targetDog = null;
+    if (client && client.dogs.length === 2) {
+      const pickedId = getSelectedDogPickerId();
+      targetDog = pickedId ? getDogById(client, pickedId) : null;
+      if (!targetDog) {
+        walkDaysGroups.innerHTML = '<div class="empty">Choisis d\'abord un chien ci-dessus.</div>';
+        return;
+      }
+    } else if (client && client.dogs.length === 1) {
+      targetDog = client.dogs[0];
+    }
+    const label = targetDog ? `Jours de balade — ${escapeHtml(targetDog.name)}` : 'Jour(s) de balade';
+    walkDaysGroups.innerHTML = dayChipGroupHtml('solo', label, requiredDays, targetDog ? targetDog.walkDays : []);
+    bindSlotChips('solo', requiredDays, targetDog ? targetDog.walkDays : []);
+  }
+  recalcProratedAmount();
+}
+
+// Reconstruit toute la zone "chien(s) / jour(s)" en fonction du tarif choisi
+// et du client sélectionné (ou en cours de création).
+let secondDogManuallyAdded = false;
+
+// Prévient si le tarif "2 chiens" sélectionné va écraser le planning d'un
+// chien qui a déjà un abonnement actif — pour éviter un double abonnement
+// (l'ancien "1 chien" en cours + le nouveau "2 chiens" qui le remplace).
+// Bloque le tarif "2 chiens" (au lieu de juste avertir) dès qu'un chien du
+// foyer a déjà un abonnement actif ce mois-ci — un changement de formule en
+// cours de mois compliquerait la facturation. Ça ne redevient possible qu'à
+// la prochaine clôture de mois, via le renouvellement.
+function updateFormuleAvailability(client) {
+  const select = document.getElementById('f-formule');
+  const deuxOption = select.querySelector('option[value="deux"]');
+  const note = document.getElementById('f-formule-note');
+
+  const hasActiveSub = !!client && client.dogs.some(d => !d.isTrial && (d.walkDays || []).length > 0);
+
+  deuxOption.disabled = hasActiveSub;
+  if (hasActiveSub) {
+    const names = client.dogs.filter(d => !d.isTrial && (d.walkDays || []).length > 0).map(d => d.name).join(', ');
+    note.textContent = `Abonnement "2 chiens" indisponible pour ${names} en cours de mois — change de formule à la prochaine clôture du mois (bouton "Renouveler les abonnements").`;
+    note.style.display = 'block';
+    if (select.value === 'deux') { select.value = 'custom'; select.dispatchEvent(new Event('change')); }
+  } else {
+    note.style.display = 'none';
+  }
+}
+
+// Masque la carte englobante quand ni "Nom du chien/maître" ni la section
+// "2e chien" n'ont rien à afficher (aucun client sélectionné, ou client
+// existant sans possibilité d'ajouter un chien).
+function updateClientFieldsGroupVisibility() {
+  const newFieldsVisible = document.getElementById('client-new-fields').style.display !== 'none';
+  const recapVisible = document.getElementById('existing-client-recap').style.display !== 'none';
+  const secondDogVisible = document.getElementById('second-dog-section').style.display !== 'none';
+  document.getElementById('client-fields-group').style.display = (newFieldsVisible || recapVisible || secondDogVisible) ? 'block' : 'none';
+}
+
+function updateScheduleUI() {
+  const tarifCode = getTarifCode();
+  const client = currentFormClient();
+  const isNewClient = document.getElementById('f-client').value === '__new__';
+  const isDeux = tarifCode.startsWith('deux-');
+  const isSeulOrTest = tarifCode === 'test' || tarifCode.startsWith('seul-');
+
+  const dogPickerContainer = document.getElementById('dog-picker-container');
+  const secondDogSection = document.getElementById('second-dog-section');
+  const secondDogContainer = document.getElementById('second-dog-container');
+  const existingDogCount = client ? client.dogs.length : (isNewClient ? 1 : 0);
+  const canAddSecondDog = (client || isNewClient) && existingDogCount < 2;
+
+  // La section "2e chien" n'apparaît que si un client est choisi et qu'il
+  // reste de la place (foyer avec 1 seul chien pour l'instant) — que ce
+  // soit un nouveau client ou un client existant (ex: il adopte un 2e chien
+  // en cours de mois).
+  secondDogSection.style.display = canAddSecondDog ? 'block' : 'none';
+  if (!canAddSecondDog) secondDogManuallyAdded = false;
+  updateClientFieldsGroupVisibility();
+
+  // Verrouillage : un foyer avec un seul chien déjà abonné n'a rien d'autre
+  // à facturer tant qu'on n'a pas explicitement ajouté un 2e chien — sinon
+  // la formule "1 chien"/"balade test" viserait par défaut ce même chien
+  // déjà sous contrat, créant un doublon silencieux.
+  const singleDogAlreadySubscribed = !!client && client.dogs.length === 1 &&
+    client.dogs.some(d => !d.isTrial && (d.walkDays || []).length > 0);
+  const lockRestOfForm = singleDogAlreadySubscribed && !secondDogManuallyAdded;
+  const restOfFormIds = ['date-field-wrap', 'formule-field-wrap', 'frequence-container',
+    'dog-picker-container', 'walk-days-container', 'amount-field-wrap', 'note-field-wrap'];
+  const lockedNote = document.getElementById('single-dog-locked-note');
+
+  if (lockRestOfForm) {
+    restOfFormIds.forEach(id => { document.getElementById(id).style.display = 'none'; });
+    document.getElementById('f-formule-note').style.display = 'none';
+    document.getElementById('f-amount-hint').style.display = 'none';
+    lockedNote.textContent = `${client.dogs[0].name} a déjà un abonnement actif. Ajoute un 2e chien ci-dessus pour pouvoir enregistrer un nouvel encaissement pour ce foyer ce mois-ci.`;
+    lockedNote.style.display = 'block';
+    document.getElementById('add-second-dog-btn').style.display = 'block';
+    secondDogContainer.style.display = 'none';
+    document.getElementById('remove-second-dog-btn').style.display = 'none';
+    refreshSubmitState();
+    return;
+  }
+  lockedNote.style.display = 'none';
+  ['date-field-wrap', 'formule-field-wrap', 'note-field-wrap'].forEach(id => {
+    document.getElementById(id).style.display = 'block';
+  });
+
+  updateFormuleAvailability(client);
+
+  // Le champ "2e chien" reste visible si le tarif "2 chiens" l'impose, OU si
+  // l'utilisateur l'a ouvert manuellement.
+  const secondDogVisible = canAddSecondDog && ((isDeux) || secondDogManuallyAdded);
+  secondDogContainer.style.display = secondDogVisible ? 'block' : 'none';
+  document.getElementById('add-second-dog-btn').style.display = (canAddSecondDog && !secondDogVisible) ? 'block' : 'none';
+  document.getElementById('remove-second-dog-btn').style.display =
+    (secondDogVisible && secondDogManuallyAdded && !isDeux) ? 'inline-block' : 'none';
+
+  if (tarifCode === 'custom') {
+    dogPickerContainer.style.display = 'none';
+    document.getElementById('walk-days-container').style.display = 'none';
+    document.getElementById('walk-days-groups').innerHTML = '';
+    document.getElementById('f-amount-hint').style.display = 'none';
+    return;
+  }
+
+  if (isDeux) {
+    dogPickerContainer.style.display = 'none';
+    document.getElementById('dog-picker-chips').innerHTML = '';
+  } else {
+    if (isSeulOrTest) renderDogPicker(client);
+    else { dogPickerContainer.style.display = 'none'; document.getElementById('dog-picker-chips').innerHTML = ''; }
+  }
+
+  renderWalkDaysArea();
+}
+
+function recalcProratedAmount() {
+  const tarifCode = getTarifCode();
+  const requiredDays = tarifRequiredDays(tarifCode);
+  const hint = document.getElementById('f-amount-hint');
+  if (!requiredDays) { hint.style.display = 'none'; return; }
+
+  const isDeux = tarifCode.startsWith('deux-');
+  const dateStr = document.getElementById('f-date').value;
+  let chosenDays;
+  if (isDeux) {
+    const d1 = getSelectedDaysForSlot('dog1');
+    const d2 = getSelectedDaysForSlot('dog2');
+    if (d1.length !== requiredDays || d2.length !== requiredDays || !dateStr) { hint.style.display = 'none'; return; }
+    // Le tarif "2 chiens" couvre N balades/semaine pour le foyer, réparties
+    // entre les deux chiens (jours identiques ou différents). On combine les
+    // deux plannings (union, sans doublon) : comme le dénominateur ci-dessous
+    // se base sur le nombre RÉEL d'occurrences de cette même union sur tout
+    // le mois, un démarrage en début de mois redonne toujours exactement le
+    // prix plein, même si les deux chiens n'ont aucun jour en commun.
+    chosenDays = [...new Set([...d1, ...d2])];
+  } else {
+    chosenDays = getSelectedDaysForSlot('solo');
+    if (chosenDays.length !== requiredDays || !dateStr) { hint.style.display = 'none'; return; }
+  }
+
+  const monthlyPrice = tarifValue(tarifCode);
+
+  // Règle métier : si l'abonnement démarre dans la 1ère semaine du mois (du
+  // 1er au 7), c'est le mois plein — prix de la formule tel quel, peu
+  // importe que ce mois compte 4 ou 5 occurrences du jour choisi. Le
+  // prorata ne s'applique que si le départ est plus tard dans le mois.
+  const startDay = new Date(dateStr + 'T00:00:00').getDate();
+  if (startDay <= 7) {
+    document.getElementById('f-amount').value = monthlyPrice;
+    hint.textContent = `Mois complet (démarre en 1ère semaine du mois) → ${fmt(monthlyPrice)}.`;
+    hint.style.display = 'block';
+    return;
+  }
+
+  const totalOccurrencesThisMonth = occurrencesInFullMonth(chosenDays, dateStr);
+  const occurrences = occurrencesUntilMonthEnd(chosenDays, dateStr);
+  // Le dénominateur est le nombre RÉEL d'occurrences de ce jour sur tout le
+  // mois (pas une approximation fixe "×4") : démarrer le 1er du mois donne
+  // ainsi toujours exactement le prix plein, peu importe si ce mois compte
+  // 4 ou 5 occurrences de ce jour de semaine.
+  const proratedAmount = totalOccurrencesThisMonth > 0
+    ? Math.round((monthlyPrice / totalOccurrencesThisMonth) * occurrences * 100) / 100
+    : 0;
+
+  document.getElementById('f-amount').value = proratedAmount;
+  if (occurrences < totalOccurrencesThisMonth) {
+    hint.textContent = `Mois entamé : ${occurrences} balade${occurrences > 1 ? 's' : ''} restante${occurrences > 1 ? 's' : ''} d'ici la fin du mois (sur ${totalOccurrencesThisMonth} ce mois-ci) → ${fmt(proratedAmount)} au prorata.`;
+  } else {
+    hint.textContent = `Mois complet : ${occurrences} balade${occurrences > 1 ? 's' : ''} → ${fmt(proratedAmount)}.`;
+  }
+  hint.style.display = 'block';
+}
+
+function fmt(n) {
+  return (Math.round(n * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function currentMonthKey(d = new Date()) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function monthLabel(key) {
+  const [y, m] = key.split('-');
+  const d = new Date(parseInt(y), parseInt(m) - 1, 1);
+  const raw = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function nextMonthKey(key) {
+  const [y, m] = key.split('-').map(Number);
+  const d = new Date(y, m, 1); // m is already 1-indexed month => this rolls to next month
+  return currentMonthKey(d);
+}
+function firstDayOfMonth(key) {
+  return key + '-01';
+}
+
+function computeMonthStats(monthKey) {
+  const monthEntries = entries.filter(e => e.date.slice(0, 7) === monthKey);
+  const ca = monthEntries.reduce((s, e) => s + e.amount, 0);
+  const caPending = monthEntries.filter(e => e.paid === false).reduce((s, e) => s + e.amount, 0);
+  const acreFactor = settings.acreActive ? (1 - settings.acrePct / 100) : 1;
+  const cotisations = ca * (settings.tauxUrssaf / 100) * acreFactor;
+  const revenuNet = ca * (1 - settings.abattementMicroBic / 100);
+  const areReduite = settings.areActive ? Math.max(0, settings.areJournaliere * 30 - 0.7 * revenuNet) : 0;
+  const impot = revenuNet * (settings.tmi / 100);
+  const totalAProvisionner = cotisations + impot;
+  const disponible = ca - cotisations - impot + areReduite;
+  const abonnementsEquivalents = tarifValue('seul-1') > 0 ? ca / tarifValue('seul-1') : 0;
+  return { ca, caPending, cotisations, areReduite, impot, totalAProvisionner, disponible, abonnementsEquivalents, count: monthEntries.length };
+}
+
+function computeObjectifBalades(includeDegressivite) {
+  const acreFactor = settings.acreActive ? (1 - settings.acrePct / 100) : 1;
+  const tauxEff = (settings.tauxUrssaf / 100) * acreFactor;
+  const abatt = settings.abattementMicroBic / 100;
+  const tmi = settings.tmi / 100;
+  const areJourn = includeDegressivite ? settings.areJournaliere * 0.7 : settings.areJournaliere;
+  const areMensuel = settings.areActive ? areJourn * 30 : 0;
+  // Le coefficient marginal : chaque € de CA supplémentaire laisse (1-abatt)
+  // de revenu net imposable (cotisations + impôt), et — seulement si l'ARE
+  // est active — réduit aussi l'ARE de 0,7 € par € de revenu net (d'où le
+  // terme +0.7, jamais ajouté quand l'ARE est désactivée).
+  const areSensitivity = settings.areActive ? 0.7 : 0;
+  const coeff = 1 - tauxEff - (1 - abatt) * (tmi + areSensitivity);
+  const essence = settings.essenceMensuelle || 0;
+  const target = settings.targetNetSalaire;
+  if (coeff <= 0) return { ca: 0, abonnements: 0 };
+  const ca = Math.max(0, (target - areMensuel + essence) / coeff);
+  const abonnements = tarifValue('seul-1') > 0 ? ca / tarifValue('seul-1') : 0;
+  return { ca, abonnements };
+}
+
+function yearTotal(year) {
+  return entries.filter(e => e.date.slice(0, 4) === String(year))
+    .reduce((s, e) => s + e.amount, 0);
+}
+
+// Le plafond micro-entreprise s'apprécie sur l'année civile, commune à
+// tout le monde — mais la 1ère année d'activité, il est proratisé au
+// nombre de jours entre la date de création et le 31 décembre.
+function computeEffectivePlafond(year) {
+  if (!settings.microCreatedThisYear || !settings.microCreationDate) return settings.plafond;
+  const creationDate = new Date(settings.microCreationDate + 'T00:00:00');
+  if (creationDate.getFullYear() !== year) return settings.plafond;
+  const startOfYear = new Date(year, 0, 1);
+  const endOfYear = new Date(year, 11, 31);
+  const totalDaysInYear = Math.round((endOfYear - startOfYear) / 86400000) + 1;
+  const daysActive = Math.round((endOfYear - creationDate) / 86400000) + 1;
+  if (daysActive <= 0) return settings.plafond;
+  return Math.round(settings.plafond * daysActive / totalDaysInYear);
+}
+
+function render() {
+  const activeMonth = settings.activeMonth || currentMonthKey();
+  const stats = computeMonthStats(activeMonth);
+
+  document.getElementById('month-label').textContent = monthLabel(activeMonth);
+  document.getElementById('total-disponible').textContent = fmt(stats.disponible);
+  document.getElementById('mini-ca').textContent = fmt(stats.ca);
+  const caPendingNote = document.getElementById('ca-pending-note');
+  if (stats.caPending > 0) {
+    caPendingNote.textContent = `⏳ dont ${fmt(stats.caPending)} pas encore reçu de la part des clients.`;
+    caPendingNote.style.display = 'block';
+  } else {
+    caPendingNote.style.display = 'none';
+  }
+  document.getElementById('mini-urssaf').textContent = '− ' + fmt(stats.cotisations);
+  document.getElementById('mini-are').textContent = '+ ' + fmt(stats.areReduite);
+  document.getElementById('mini-impot').textContent = '− ' + fmt(stats.impot);
+  document.getElementById('mini-total-provision').textContent = '− ' + fmt(stats.totalAProvisionner);
+
+  const activeYear = parseInt(activeMonth.slice(0, 4));
+  const yTotal = yearTotal(activeYear);
+  const effectivePlafond = computeEffectivePlafond(activeYear);
+  const pct = effectivePlafond > 0 ? Math.min(100, (yTotal / effectivePlafond) * 100) : 0;
+  document.getElementById('mini-plafond-ca').textContent = fmt(yTotal);
+  document.getElementById('mini-plafond-max').textContent = fmt(effectivePlafond);
+  document.getElementById('plafond-progress-fill').style.width = Math.min(100, pct).toFixed(1) + '%';
+
+  const objectifPlein = computeObjectifBalades(false);
+  const objectifDegressif = computeObjectifBalades(true);
+  const goalPct = objectifPlein.abonnements > 0 ? Math.min(100, (stats.abonnementsEquivalents / objectifPlein.abonnements) * 100) : 0;
+  document.getElementById('goal-count').textContent = stats.abonnementsEquivalents.toFixed(1);
+  document.getElementById('goal-target').textContent = Math.ceil(objectifPlein.abonnements);
+  document.getElementById('goal-progress-fill').style.width = goalPct.toFixed(1) + '%';
+  document.getElementById('goal-title').textContent = settings.areActive
+    ? 'Objectif pour égaler ton ancien salaire (avec ARE)'
+    : 'Objectif pour égaler ton ancien salaire';
+  const degressifNote = document.getElementById('goal-note-degressif');
+  if (settings.areActive) {
+    degressifNote.textContent =
+      'Après le 6ᵉ mois (ARE dégressive), il en faudrait plutôt ' + Math.ceil(objectifDegressif.abonnements) + ' — anticipe la hausse.';
+    degressifNote.style.display = 'block';
+  } else {
+    degressifNote.style.display = 'none';
+  }
+
+  document.getElementById('are-breakdown-row').style.display = settings.areActive ? 'flex' : 'none';
+  document.getElementById('impot-subrow').classList.toggle('breakdown-subrow-last', settings.areActive);
+  document.getElementById('impot-subrow').classList.toggle('breakdown-subrow-endcap', !settings.areActive);
+
+  renderEntriesList(activeMonth);
+  renderHistory();
+  renderSettings();
+  renderClientsSettings();
+  renderPlanning();
+}
+
+function entryPhotoBoxHtml(client) {
+  const photo = clientPhoto(client);
+  return `<div class="entry-row-photo">${photo ? `<img src="${photo}" alt="">` : '<span class="entry-row-photo-placeholder">🐾</span>'}</div>`;
+}
+
+function renderEntriesList(monthKey) {
+  const list = document.getElementById('entries-list');
+  const monthEntries = entries
+    .filter(e => e.date.slice(0, 7) === monthKey)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if (monthEntries.length === 0) {
+    list.innerHTML = '<div class="empty">Aucun encaissement ce mois-ci. Ajoute ta première balade ci-dessus.</div>';
+    return;
+  }
+  list.innerHTML = monthEntries.map(e => {
+    const client = e.clientId ? getClientById(e.clientId) : null;
+    const clientText = client ? escapeHtml(clientLabel(client)) : '<span style="opacity:0.6;">Client supprimé</span>';
+    const isPaid = e.paid !== false;
+    return `
+    <div class="entry-row">
+      ${entryPhotoBoxHtml(client)}
+      <div class="entry-row-content">
+        <div class="entry-row-top">
+          <span class="entry-row-title">
+            <span class="entry-date">${new Date(e.date).toLocaleDateString('fr-FR')}</span>
+            <span class="client-name">${clientText}</span>
+          </span>
+          <span class="amount">${fmt(e.amount)}</span>
+        </div>
+        <div class="entry-row-bottom">
+          <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}</span>
+          <div class="row-actions">
+            <button class="paid-toggle ${isPaid ? 'paid' : 'pending'}" data-id="${e.id}">${isPaid ? '✅ Reçu' : '⏳ En attente'}</button>
+          </div>
+        </div>
+      </div>
+      <div class="entry-row-del-wrap">
+        <button class="del" data-id="${e.id}" aria-label="Supprimer">✕</button>
+      </div>
+    </div>
+  `;
+  }).join('');
+
+  list.querySelectorAll('.paid-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const entry = entries.find(e => e.id === btn.dataset.id);
+      if (!entry) return;
+      entry.paid = entry.paid === false ? true : false;
+      await saveEntries();
+      render();
+    });
+  });
+
+  list.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await deleteEntryWithSubscriptionCheck(btn.dataset.id);
+    });
+  });
+}
+
+// Supprime un encaissement, et propose d'arrêter l'abonnement récurrent du
+// client si celui-ci en a un actif — sinon la suppression de l'encaissement
+// seul ne l'enlève ni du planning ni du statut "abonnement actif".
+async function deleteEntryWithSubscriptionCheck(entryId) {
+  const entry = entries.find(e => e.id === entryId);
+  if (!entry) return;
+  const client = entry.clientId ? getClientById(entry.clientId) : null;
+  const activeDogs = client ? client.dogs.filter(d => !d.isTrial && (d.walkDays || []).length > 0) : [];
+
+  entries = entries.filter(e => e.id !== entryId);
+  await saveEntries();
+
+  if (client && activeDogs.length > 0) {
+    const names = activeDogs.map(d => `${d.name} (${d.walkDays.length}x/semaine)`).join(', ');
+    document.getElementById('stop-sub-text').textContent =
+      `${clientLabel(client)} a un abonnement actif pour ${names}. Si ce client a annulé, tu peux aussi l'arrêter maintenant — il restera client actif, juste sans abonnement en cours.`;
+    pendingStopSubClientId = client.id;
+    stopSubOverlay.classList.add('open');
+    stopSubModal.classList.add('open');
+    stopSubModal.setAttribute('aria-hidden', 'false');
+  } else {
+    render();
+  }
+}
+
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="empty">Rien à afficher pour l\'instant.</div>';
+    return;
+  }
+  const months = [...new Set(entries.map(e => e.date.slice(0, 7)))].sort().reverse();
+  container.innerHTML = months.map(mk => {
+    const s = computeMonthStats(mk);
+    const closedBadge = (settings.closedMonths || []).includes(mk) ? ' 🔒' : '';
+    const pendingNote = s.caPending > 0 ? `<div class="note" style="margin-top:6px;">⏳ dont ${fmt(s.caPending)} pas encore reçu</div>` : '';
+    const monthEntries = entries.filter(e => e.date.slice(0, 7) === mk).sort((a, b) => b.date.localeCompare(a.date));
+    const entriesHtml = monthEntries.map(e => {
+      const client = e.clientId ? getClientById(e.clientId) : null;
+      const clientText = client ? escapeHtml(clientLabel(client)) : '<span style="opacity:0.6;">Client supprimé</span>';
+      const isPaid = e.paid !== false;
+      return `
+        <div class="entry-row">
+          ${entryPhotoBoxHtml(client)}
+          <div class="entry-row-content">
+            <div class="entry-row-top">
+              <span class="entry-row-title">
+                <span class="entry-date">${new Date(e.date).toLocaleDateString('fr-FR')}</span>
+                <span class="client-name">${clientText}</span>
+              </span>
+              <span class="amount">${fmt(e.amount)}</span>
+            </div>
+            <div class="entry-row-bottom">
+              <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}</span>
+              <div class="row-actions">
+                <button class="paid-toggle ${isPaid ? 'paid' : 'pending'}" data-id="${e.id}">${isPaid ? '✅ Reçu' : '⏳ En attente'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="month-group">
+        <div class="month-header history-toggle" data-month="${mk}" style="cursor:pointer;">
+          <span>${monthLabel(mk)}${closedBadge} <span style="font-size:0.7rem; color:var(--text-dim);">▾</span></span>
+          <span>${fmt(s.disponible)}</span>
+        </div>
+        <div class="mini-card" style="margin-bottom:0;">
+          <div class="lbl">CA · Cotisations · ARE réduite · ${s.count} encaissement(s)</div>
+          <div class="val" style="font-size:0.85rem;">${fmt(s.ca)} · −${fmt(s.cotisations)} · +${fmt(s.areReduite)}</div>
+          ${pendingNote}
+        </div>
+        <div class="history-entries" data-month-entries="${mk}" style="display:none; margin-top:8px;">${entriesHtml}</div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.history-toggle').forEach(header => {
+    header.addEventListener('click', () => {
+      const mk = header.dataset.month;
+      const sub = container.querySelector(`.history-entries[data-month-entries="${mk}"]`);
+      if (sub) sub.style.display = sub.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+
+  container.querySelectorAll('.paid-toggle').forEach(btn => {
+    btn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const entry = entries.find(e => e.id === btn.dataset.id);
+      if (!entry) return;
+      entry.paid = entry.paid === false ? true : false;
+      await saveEntries();
+      render();
+    });
+  });
+
+  renderUnpaidView();
+}
+
+// Vue "Impayés" : tous les encaissements en attente, tous mois confondus,
+// regroupés par client avec le total dû et le détail dépliable par mois.
+// Ancienneté d'un encaissement en attente : nombre de jours écoulés depuis
+// sa date, avec un badge dont la couleur indique l'urgence.
+function daysSince(dateStr) {
+  const entryDate = new Date(dateStr + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((today - entryDate) / 86400000));
+}
+function ageLabel(days) {
+  if (days === 0) return "Aujourd'hui";
+  if (days === 1) return 'Depuis 1 jour';
+  return `Depuis ${days} jours`;
+}
+function ageBadgeClass(days) {
+  if (days >= 14) return 'age-late';
+  if (days >= 7) return 'age-warn';
+  return 'age-recent';
+}
+
+function renderUnpaidView() {
+  const summaryBox = document.getElementById('unpaid-summary');
+  const listBox = document.getElementById('unpaid-list');
+  const unpaidEntries = entries.filter(e => e.paid === false);
+
+  if (unpaidEntries.length === 0) {
+    summaryBox.innerHTML = '';
+    listBox.innerHTML = '<div class="empty">Aucun encaissement en attente pour l\'instant. 🎉</div>';
+    return;
+  }
+
+  const grandTotal = unpaidEntries.reduce((s, e) => s + e.amount, 0);
+  summaryBox.innerHTML = `<div class="unpaid-total-banner">⏳ ${fmt(grandTotal)} en attente au total</div>`;
+
+  const byClient = {};
+  unpaidEntries.forEach(e => {
+    const key = e.clientId || '__unknown__';
+    if (!byClient[key]) byClient[key] = [];
+    byClient[key].push(e);
+  });
+
+  // Tri par ancienneté : le client dont l'encaissement en attente est le
+  // plus vieux remonte en premier — c'est le plus urgent à relancer.
+  const clientKeys = Object.keys(byClient);
+  const oldestDaysByKey = {};
+  clientKeys.forEach(key => {
+    oldestDaysByKey[key] = Math.max(...byClient[key].map(e => daysSince(e.date)));
+  });
+  clientKeys.sort((a, b) => oldestDaysByKey[b] - oldestDaysByKey[a]);
+
+  listBox.innerHTML = clientKeys.map(key => {
+    const client = key !== '__unknown__' ? getClientById(key) : null;
+    const name = client ? clientLabel(client) : 'Client supprimé';
+    const clientEntries = byClient[key].sort((a, b) => a.date.localeCompare(b.date));
+    const total = clientEntries.reduce((s, e) => s + e.amount, 0);
+    const oldestDays = oldestDaysByKey[key];
+    const detailHtml = clientEntries.map(e => {
+      const days = daysSince(e.date);
+      return `
+      <div class="unpaid-entry-line">
+        <span>${monthLabel(e.date.slice(0, 7))} — ${new Date(e.date).toLocaleDateString('fr-FR')}${e.formuleLabel ? ' — ' + escapeHtml(e.formuleLabel) : ''}</span>
+        <span class="unpaid-entry-right">
+          <span class="unpaid-age-badge ${ageBadgeClass(days)}">${ageLabel(days)}</span>
+          <span class="unpaid-entry-amount">${fmt(e.amount)}</span>
+        </span>
+      </div>
+    `;
+    }).join('');
+    return `
+      <div class="unpaid-client-card" data-client-key="${key}">
+        <div class="unpaid-client-header">
+          <span class="unpaid-client-name">${escapeHtml(name)} <span style="color:var(--text-dim); font-weight:500;">(${clientEntries.length})</span> <span class="unpaid-age-badge ${ageBadgeClass(oldestDays)}">${ageLabel(oldestDays)}</span></span>
+          <span class="unpaid-client-total">${fmt(total)}</span>
+        </div>
+        <div class="unpaid-client-detail">${detailHtml}</div>
+      </div>
+    `;
+  }).join('');
+
+  listBox.querySelectorAll('.unpaid-client-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const detail = header.parentElement.querySelector('.unpaid-client-detail');
+      detail.style.display = detail.style.display === 'block' ? 'none' : 'block';
+    });
+  });
+}
+
+function renderSettings() {
+  document.getElementById('s-taux').value = settings.tauxUrssaf;
+  document.getElementById('s-acre-pct').value = settings.acrePct;
+  document.getElementById('s-sjr').value = settings.sjr;
+  document.getElementById('s-are').value = settings.areJournaliere;
+  document.getElementById('s-plafond').value = settings.plafond;
+  document.getElementById('s-target-salaire').value = settings.targetNetSalaire;
+  document.getElementById('s-essence').value = settings.essenceMensuelle;
+  document.getElementById('s-tmi').value = settings.tmi;
+  document.getElementById('s-tarif-test').value = settings.tarifs.test;
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('s-tarif-seul-' + i).value = settings.tarifs.seul[i - 1];
+    document.getElementById('s-tarif-deux-' + i).value = settings.tarifs.deux[i - 1];
+  }
+  const toggle = document.getElementById('s-acre-toggle');
+  toggle.classList.toggle('on', settings.acreActive);
+
+  const areToggle = document.getElementById('s-are-toggle');
+  areToggle.classList.toggle('on', settings.areActive);
+  document.getElementById('are-settings-block').style.display = settings.areActive ? 'block' : 'none';
+  document.getElementById('are-amount-block').style.display = settings.areActive ? 'block' : 'none';
+
+  const microToggle = document.getElementById('s-micro-created-toggle');
+  microToggle.classList.toggle('on', settings.microCreatedThisYear);
+  document.getElementById('micro-creation-date-block').style.display = settings.microCreatedThisYear ? 'block' : 'none';
+  document.getElementById('s-micro-creation-date').value = settings.microCreationDate || '';
+
+  const prorataNote = document.getElementById('micro-creation-prorata-note');
+  if (settings.microCreatedThisYear && settings.microCreationDate) {
+    const creationDate = new Date(settings.microCreationDate + 'T00:00:00');
+    const year = creationDate.getFullYear();
+    const effectivePlafond = computeEffectivePlafond(year);
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year, 11, 31);
+    const totalDaysInYear = Math.round((endOfYear - startOfYear) / 86400000) + 1;
+    const daysActive = Math.round((endOfYear - creationDate) / 86400000) + 1;
+    prorataNote.textContent = daysActive > 0
+      ? `Plafond proratisé sur ${daysActive} jours d'activité en ${year} → ${fmt(effectivePlafond)} au lieu de ${fmt(settings.plafond)}.`
+      : `Cette date est postérieure au 31 décembre ${year} — vérifie la date saisie.`;
+    prorataNote.style.display = 'block';
+  } else {
+    prorataNote.style.display = 'none';
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    closeMobileNav();
+  });
+});
+
+// Menu burger (nav principale repliée sur petit écran)
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const mainNav = document.getElementById('main-nav');
+function closeMobileNav() {
+  hamburgerBtn.classList.remove('open');
+  mainNav.classList.remove('mobile-open');
+}
+hamburgerBtn.addEventListener('click', () => {
+  hamburgerBtn.classList.toggle('open');
+  mainNav.classList.toggle('mobile-open');
+});
+document.addEventListener('click', (ev) => {
+  if (!mainNav.classList.contains('mobile-open')) return;
+  if (mainNav.contains(ev.target) || hamburgerBtn.contains(ev.target)) return;
+  closeMobileNav();
+});
+
+// Sous-onglets (Réglages, Historique, etc.) — scopés par groupe pour ne pas
+// se marcher dessus quand plusieurs jeux de sous-onglets existent.
+document.querySelectorAll('.subtab').forEach(subtab => {
+  subtab.addEventListener('click', () => {
+    const group = subtab.dataset.group;
+    document.querySelectorAll(`.subtab[data-group="${group}"]`).forEach(t => t.classList.remove('active'));
+    document.querySelectorAll(`.subpanel[data-group="${group}"]`).forEach(p => p.classList.remove('active'));
+    subtab.classList.add('active');
+    document.getElementById('subpanel-' + subtab.dataset.subpanel).classList.add('active');
+  });
+});
+
+// "+ Nouveau client" directly from Réglages > Clients
+document.getElementById('clients-search').addEventListener('input', renderClientsSettings);
+
+document.getElementById('open-add-client-only').addEventListener('click', () => {
+  openAddPanel();
+  const clientSelect = document.getElementById('f-client');
+  clientSelect.value = '__new__';
+  clientSelect.dispatchEvent(new Event('change'));
+  refreshSubmitState();
+});
+
+// Side panel (add encaissement)
+const sidePanel = document.getElementById('side-panel');
+const panelOverlay = document.getElementById('panel-overlay');
+
+function openAddPanel() {
+  sidePanel.classList.add('open');
+  panelOverlay.classList.add('open');
+  sidePanel.setAttribute('aria-hidden', 'false');
+  const activeMonth = settings.activeMonth || currentMonthKey();
+  const today = new Date();
+  // Pas d'attribut "min" natif ici : la validation en dur (ci-dessous, à la
+  // soumission) évite les échecs silencieux liés à la validation HTML5 native.
+  const dateInput = document.getElementById('f-date');
+  dateInput.value = (currentMonthKey(today) === activeMonth)
+    ? currentMonthKey(today) + '-' + String(today.getDate()).padStart(2, '0')
+    : firstDayOfMonth(activeMonth);
+  populateClientSelect();
+  populateFormuleSelect();
+  document.getElementById('frequence-container').style.display = 'none';
+  document.getElementById('amount-field-wrap').style.display = 'none';
+  document.getElementById('client-new-fields').style.display = 'none';
+  document.getElementById('existing-client-recap').style.display = 'none';
+  document.getElementById('f-second-dog-name').value = '';
+  secondDogManuallyAdded = false;
+  document.getElementById('form-error').style.display = 'none';
+  updateScheduleUI();
+  refreshSubmitState();
+}
+function closeAddPanel() {
+  sidePanel.classList.remove('open');
+  panelOverlay.classList.remove('open');
+  sidePanel.setAttribute('aria-hidden', 'true');
+}
+document.getElementById('open-add-panel').addEventListener('click', openAddPanel);
+document.getElementById('close-add-panel').addEventListener('click', closeAddPanel);
+panelOverlay.addEventListener('click', closeAddPanel);
+
+// Clôture du mois + renouvellement des abonnements
+const closureOverlay = document.getElementById('closure-overlay');
+const closureModal = document.getElementById('closure-modal');
+const closureStepConfirm = document.getElementById('closure-step-confirm');
+const closureStepRenewal = document.getElementById('closure-step-renewal');
+
+function getRecurringClients() {
+  return clients.filter(c => {
+    if (c.archived) return false;
+    const dogs = c.dogs || [];
+    if (c.subscriptionType === 'deux') {
+      return dogs.length === 2 && dogs.every(d => !d.isTrial && (d.walkDays || []).length > 0);
+    }
+    return dogs.some(d => !d.isTrial && (d.walkDays || []).length > 0);
+  });
+}
+
+function renewalTarifFor(client) {
+  const dogs = client.dogs || [];
+  if (client.subscriptionType === 'deux' && dogs.length === 2) {
+    const n = (dogs[0].walkDays || []).length;
+    if (n < 1 || n > 5) return null;
+    return { code: `deux-${n}`, type: 'deux', n };
+  }
+  const activeDog = dogs.find(d => !d.isTrial && (d.walkDays || []).length > 0);
+  if (!activeDog) return null;
+  const n = activeDog.walkDays.length;
+  if (n < 1 || n > 5) return null;
+  return { code: `seul-${n}`, type: 'seul', n };
+}
+
+function renewalDayChipGroups(clientId, formuleType, freq, dogs) {
+  if (formuleType === 'deux') {
+    const dog1 = dogs[0];
+    const dog2 = dogs[1]; // peut être undefined si le foyer n'a qu'1 chien pour l'instant
+    const label1 = `Jours — ${escapeHtml(dog1.name)}`;
+    const label2 = dog2 ? `Jours — ${escapeHtml(dog2.name)}` : 'Jours — 2e chien';
+    return dayChipGroupHtml(`renew-${clientId}-dog1`, label1, freq, dog1.walkDays || []) +
+      dayChipGroupHtml(`renew-${clientId}-dog2`, label2, freq, dog2 ? (dog2.walkDays || []) : []);
+  }
+  const activeDog = dogs.find(d => !d.isTrial && (d.walkDays || []).length > 0) || dogs[0];
+  return dayChipGroupHtml(`renew-${clientId}-solo`, `Jours — ${escapeHtml(activeDog.name)}`, freq, activeDog.walkDays || []);
+}
+
+function bindRenewalDayChips(clientId, formuleType, freq, dogs) {
+  if (formuleType === 'deux') {
+    const dog1 = dogs[0];
+    const dog2 = dogs[1];
+    bindSlotChips(`renew-${clientId}-dog1`, freq, dog1 ? (dog1.walkDays || []) : []);
+    bindSlotChips(`renew-${clientId}-dog2`, freq, dog2 ? (dog2.walkDays || []) : []);
+  } else {
+    const activeDog = dogs.find(d => !d.isTrial && (d.walkDays || []).length > 0) || dogs[0];
+    bindSlotChips(`renew-${clientId}-solo`, freq, activeDog ? (activeDog.walkDays || []) : []);
+  }
+  document.querySelectorAll(`[data-slot="renew-${clientId}-dog1"] .day-chip, [data-slot="renew-${clientId}-dog2"] .day-chip, [data-slot="renew-${clientId}-solo"] .day-chip`)
+    .forEach(chip => chip.addEventListener('click', () => updateRenewalRowAmount(clientId)));
+}
+
+function renewalRowRequiredFreq(row) {
+  return parseInt(row.querySelector('.renewal-freq-select').value);
+}
+
+function rerenderRenewalDays(client) {
+  const row = document.querySelector(`.renewal-row-detailed[data-id="${client.id}"]`);
+  if (!row) return;
+  const formuleType = row.querySelector('.renewal-formule-select').value;
+  const freq = renewalRowRequiredFreq(row);
+  const secondDogWrap = row.querySelector('.renewal-second-dog-wrap');
+  secondDogWrap.style.display = (formuleType === 'deux' && client.dogs.length < 2) ? 'block' : 'none';
+  const daysBox = row.querySelector('.renewal-days-groups');
+  daysBox.innerHTML = renewalDayChipGroups(client.id, formuleType, freq, client.dogs);
+  bindRenewalDayChips(client.id, formuleType, freq, client.dogs);
+  updateRenewalRowAmount(client.id);
+}
+
+function updateRenewalRowAmount(clientId) {
+  const row = document.querySelector(`.renewal-row-detailed[data-id="${clientId}"]`);
+  if (!row) return;
+  const formuleType = row.querySelector('.renewal-formule-select').value;
+  const freq = renewalRowRequiredFreq(row);
+  const price = tarifValue(`${formuleType}-${freq}`);
+  row.querySelector('.renewal-amount').textContent = fmt(price);
+  updateRenewalSummary();
+}
+
+function populateRenewalList() {
+  const container = document.getElementById('renewal-list');
+  const recurring = getRecurringClients().sort((a, b) => clientLabel(a).localeCompare(clientLabel(b)));
+
+  if (recurring.length === 0) {
+    container.innerHTML = '<div class="empty">Aucun abonnement récurrent à renouveler pour l\'instant.</div>';
+    document.getElementById('renewal-summary').textContent = '';
+    return;
+  }
+
+  container.innerHTML = recurring.map(c => {
+    const tarif = renewalTarifFor(c);
+    const formuleType = tarif ? tarif.type : 'seul';
+    const freq = tarif ? tarif.n : 1;
+    const price = tarif ? tarifValue(tarif.code) : tarifValue(`${formuleType}-${freq}`);
+    const canOfferDeux = c.dogs.length < 2 || formuleType === 'deux';
+    return `
+      <div class="renewal-row-detailed" data-id="${c.id}">
+        <div class="renewal-row-top">
+          <label class="renewal-checkbox-label">
+            <input type="checkbox" class="renewal-check" checked>
+            <span class="renewal-name">${escapeHtml(clientLabel(c))}</span>
+          </label>
+          <span class="renewal-amount">${fmt(price)}</span>
+          <button type="button" class="renewal-expand-toggle" aria-label="Détails">▾</button>
+        </div>
+        <div class="renewal-edit-fields" style="display:none;">
+          <select class="renewal-formule-select">
+            <option value="seul" ${formuleType === 'seul' ? 'selected' : ''}>Abonnement 1 chien</option>
+            ${canOfferDeux ? `<option value="deux" ${formuleType === 'deux' ? 'selected' : ''}>Abonnement 2 chiens</option>` : ''}
+          </select>
+          <div class="renewal-second-dog-wrap" style="display:${formuleType === 'deux' && c.dogs.length < 2 ? 'block' : 'none'};">
+            <input type="text" class="renewal-second-dog-name" placeholder="Nom du 2e chien">
+          </div>
+          <select class="renewal-freq-select">
+            ${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === freq ? 'selected' : ''}>${n}x/semaine</option>`).join('')}
+          </select>
+          <div class="renewal-days-groups">${renewalDayChipGroups(c.id, formuleType, freq, c.dogs)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  recurring.forEach(c => {
+    const tarif = renewalTarifFor(c);
+    const formuleType = tarif ? tarif.type : 'seul';
+    const freq = tarif ? tarif.n : 1;
+    bindRenewalDayChips(c.id, formuleType, freq, c.dogs);
+
+    const row = container.querySelector(`.renewal-row-detailed[data-id="${c.id}"]`);
+    row.querySelector('.renewal-check').addEventListener('change', updateRenewalSummary);
+    row.querySelector('.renewal-formule-select').addEventListener('change', () => rerenderRenewalDays(c));
+    row.querySelector('.renewal-freq-select').addEventListener('change', () => rerenderRenewalDays(c));
+    row.querySelector('.renewal-expand-toggle').addEventListener('click', () => {
+      const fields = row.querySelector('.renewal-edit-fields');
+      const toggle = row.querySelector('.renewal-expand-toggle');
+      const isOpen = fields.style.display !== 'none';
+      fields.style.display = isOpen ? 'none' : 'flex';
+      toggle.classList.toggle('expanded', !isOpen);
+    });
+  });
+
+  updateRenewalSummary();
+}
+
+function updateRenewalSummary() {
+  const summary = document.getElementById('renewal-summary');
+  const checks = [...document.querySelectorAll('.renewal-check')];
+  const checkedCount = checks.filter(c => c.checked).length;
+  summary.textContent = `${checkedCount} abonnement${checkedCount > 1 ? 's' : ''} sur ${checks.length} seront ajoutés au mois suivant.`;
+}
+
+function openClosureModal() {
+  const activeMonth = settings.activeMonth || currentMonthKey();
+  document.getElementById('closure-month-label').textContent = monthLabel(activeMonth);
+  closureStepConfirm.style.display = 'block';
+  closureStepRenewal.style.display = 'none';
+  document.getElementById('renewal-error').style.display = 'none';
+  closureOverlay.classList.add('open');
+  closureModal.classList.add('open');
+  closureModal.setAttribute('aria-hidden', 'false');
+}
+function closeClosureModal() {
+  closureOverlay.classList.remove('open');
+  closureModal.classList.remove('open');
+  closureModal.setAttribute('aria-hidden', 'true');
+}
+document.getElementById('open-closure-modal').addEventListener('click', openClosureModal);
+document.getElementById('closure-cancel').addEventListener('click', closeClosureModal);
+document.getElementById('closure-back').addEventListener('click', closeClosureModal);
+closureOverlay.addEventListener('click', closeClosureModal);
+
+document.getElementById('closure-confirm-yes').addEventListener('click', () => {
+  closureStepConfirm.style.display = 'none';
+  closureStepRenewal.style.display = 'block';
+  populateRenewalList();
+});
+
+document.getElementById('confirm-renewal').addEventListener('click', async () => {
+  const errorBox = document.getElementById('renewal-error');
+  errorBox.style.display = 'none';
+  const btn = document.getElementById('confirm-renewal');
+  const rows = [...document.querySelectorAll('.renewal-row-detailed')];
+  const checkedRows = rows.filter(r => r.querySelector('.renewal-check').checked);
+  const uncheckedRows = rows.filter(r => !r.querySelector('.renewal-check').checked);
+
+  // Valide chaque ligne cochée avant de toucher aux données : jours complets,
+  // et nom du 2e chien renseigné si on bascule vers "2 chiens".
+  for (const row of checkedRows) {
+    const clientId = row.dataset.id;
+    const client = getClientById(clientId);
+    if (!client) continue;
+    const formuleType = row.querySelector('.renewal-formule-select').value;
+    const freq = renewalRowRequiredFreq(row);
+    if (formuleType === 'deux') {
+      if (client.dogs.length < 2 && !row.querySelector('.renewal-second-dog-name').value.trim()) {
+        errorBox.textContent = `Renseigne le nom du 2e chien pour ${clientLabel(client)} (passage à l'abonnement 2 chiens).`;
+        errorBox.style.display = 'block';
+        return;
+      }
+      const d1 = getSelectedDaysForSlot(`renew-${clientId}-dog1`);
+      const d2 = getSelectedDaysForSlot(`renew-${clientId}-dog2`);
+      if (d1.length !== freq || d2.length !== freq) {
+        errorBox.textContent = `Sélectionne ${freq} jour${freq > 1 ? 's' : ''} pour chacun des deux chiens de ${clientLabel(client)}.`;
+        errorBox.style.display = 'block';
+        return;
+      }
+    } else {
+      const d = getSelectedDaysForSlot(`renew-${clientId}-solo`);
+      if (d.length !== freq) {
+        errorBox.textContent = `Sélectionne ${freq} jour${freq > 1 ? 's' : ''} pour ${clientLabel(client)}.`;
+        errorBox.style.display = 'block';
+        return;
+      }
+    }
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Clôture en cours...';
+
+  try {
+    const activeMonth = settings.activeMonth || currentMonthKey();
+    const upcomingMonth = nextMonthKey(activeMonth);
+    const upcomingDate = firstDayOfMonth(upcomingMonth);
+
+    for (const row of checkedRows) {
+      const clientId = row.dataset.id;
+      const client = getClientById(clientId);
+      if (!client) continue;
+      const formuleType = row.querySelector('.renewal-formule-select').value;
+      const freq = renewalRowRequiredFreq(row);
+      const code = `${formuleType}-${freq}`;
+      const price = tarifValue(code);
+
+      if (formuleType === 'deux') {
+        if (client.dogs.length < 2) {
+          const name = row.querySelector('.renewal-second-dog-name').value.trim();
+          client.dogs.push({ id: newDogId(client), name, walkDays: [], isTrial: false, trialDate: null });
+        }
+        setDogWalkDays(client.dogs[0], getSelectedDaysForSlot(`renew-${clientId}-dog1`), upcomingDate);
+        client.dogs[0].isTrial = false;
+        client.dogs[0].trialDate = null;
+        setDogWalkDays(client.dogs[1], getSelectedDaysForSlot(`renew-${clientId}-dog2`), upcomingDate);
+        client.dogs[1].isTrial = false;
+        client.dogs[1].trialDate = null;
+        client.subscriptionType = 'deux';
+      } else {
+        const activeDog = client.dogs.find(d => !d.isTrial && (d.walkDays || []).length > 0) || client.dogs[0];
+        setDogWalkDays(activeDog, getSelectedDaysForSlot(`renew-${clientId}-solo`), upcomingDate);
+        activeDog.isTrial = false;
+        activeDog.trialDate = null;
+        client.subscriptionType = 'seul';
+      }
+
+      entries.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        date: upcomingDate,
+        amount: price,
+        note: '',
+        formuleLabel: tarifNoteLabel(code) + ' (renouvellement)',
+        clientId,
+        paid: false
+      });
+    }
+    await saveClients();
+    await saveEntries();
+
+    // Un abonnement décoché s'arrête : on vide le planning récurrent de tous
+    // ses chiens pour qu'il ne soit plus proposé aux prochaines clôtures ni
+    // affiché en semaine type, tant qu'il n'est pas relancé manuellement.
+    let clientsChanged = false;
+    for (const row of uncheckedRows) {
+      const client = getClientById(row.dataset.id);
+      if (client) {
+        (client.dogs || []).forEach(d => {
+          if ((d.walkDays || []).length > 0) { d.walkDays = []; d.subscriptionSince = null; clientsChanged = true; }
+        });
+      }
+    }
+    if (clientsChanged) await saveClients();
+
+    if (!settings.closedMonths.includes(activeMonth)) settings.closedMonths.push(activeMonth);
+    settings.activeMonth = upcomingMonth;
+    await saveSettings();
+
+    closeClosureModal();
+    render();
+  } catch (err) {
+    console.error('Échec de la clôture', err);
+    errorBox.textContent = 'Erreur lors de la clôture : ' + (err && err.message ? err.message : String(err));
+    errorBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Valider et passer au mois suivant';
+  }
+});
+
+document.getElementById('f-client').addEventListener('change', (ev) => {
+  const value = ev.target.value;
+  const newFields = document.getElementById('client-new-fields');
+  const recap = document.getElementById('existing-client-recap');
+  newFields.style.display = value === '__new__' ? 'block' : 'none';
+
+  if (value && value !== '__new__') {
+    const client = getClientById(value);
+    if (client) {
+      document.getElementById('recap-owner-name').textContent = client.ownerName;
+      document.getElementById('recap-dog-names').textContent = client.dogs.map(d => d.name).join(', ');
+      recap.style.display = 'block';
+    } else {
+      recap.style.display = 'none';
+    }
+  } else {
+    recap.style.display = 'none';
+  }
+
+  if (value !== '__new__') {
+    secondDogManuallyAdded = false;
+    document.getElementById('f-second-dog-name').value = '';
+  }
+  updateClientFieldsGroupVisibility();
+  updateScheduleUI();
+});
+
+document.getElementById('add-second-dog-btn').addEventListener('click', () => {
+  secondDogManuallyAdded = true;
+  updateScheduleUI();
+  document.getElementById('f-second-dog-name').focus();
+  refreshSubmitState();
+});
+
+document.getElementById('remove-second-dog-btn').addEventListener('click', () => {
+  secondDogManuallyAdded = false;
+  document.getElementById('f-second-dog-name').value = '';
+  updateScheduleUI();
+  refreshSubmitState();
+});
+
+function handleFormuleOrFrequenceChange() {
+  const code = getTarifCode();
+  const required = tarifRequiredDays(code);
+
+  if (!required) document.getElementById('f-amount-hint').style.display = 'none';
+
+  document.getElementById('amount-field-wrap').style.display = code === 'custom' ? 'none' : 'block';
+
+  if (code !== 'custom') {
+    const val = tarifValue(code);
+    if (val !== null) document.getElementById('f-amount').value = val;
+  }
+
+  // Appelé en dernier : reconstruit le sélecteur de chien / jours de balade
+  // en fonction du tarif choisi, et recalcule le montant au prorata si possible.
+  updateScheduleUI();
+}
+
+document.getElementById('f-formule').addEventListener('change', () => {
+  populateFrequenceSelect();
+  handleFormuleOrFrequenceChange();
+});
+document.getElementById('f-frequence').addEventListener('change', handleFormuleOrFrequenceChange);
+
+document.getElementById('f-date').addEventListener('change', recalcProratedAmount);
+document.getElementById('f-second-dog-name').addEventListener('input', (ev) => {
+  const group2Label = document.querySelector('.walk-day-group[data-slot="dog2"] label');
+  if (group2Label) {
+    const val = ev.target.value.trim();
+    group2Label.textContent = `Jours de balade — ${val || '2e chien'}`;
+  }
+});
+
+document.getElementById('f-dog-name').addEventListener('input', (ev) => {
+  const group1Label = document.querySelector('.walk-day-group[data-slot="dog1"] label');
+  if (group1Label) {
+    const val = ev.target.value.trim();
+    group1Label.textContent = `Jours de balade — ${val || '1er chien'}`;
+  }
+});
+
+// Un seul écouteur délégué : tient le bouton "Ajouter l'encaissement" à jour
+// dès qu'un champ du formulaire change (texte ou sélection).
+document.getElementById('entry-form').addEventListener('input', refreshSubmitState);
+document.getElementById('entry-form').addEventListener('change', refreshSubmitState);
+
+
+
+// Entry form
+// Vérifie si le formulaire est actuellement complet, sans afficher d'erreur —
+// sert uniquement à activer/désactiver le bouton "Ajouter l'encaissement".
+function isFormComplete() {
+  const clientChoice = document.getElementById('f-client').value;
+  if (!clientChoice) return false;
+
+  if (clientChoice === '__new__') {
+    if (!document.getElementById('f-dog-name').value.trim()) return false;
+    if (!document.getElementById('f-owner-name').value.trim()) return false;
+  }
+
+  const formule = document.getElementById('f-formule').value;
+  if (formule === 'custom') return false;
+
+  const tarifCode = getTarifCode();
+  const requiredDays = tarifRequiredDays(tarifCode);
+  const isDeux = tarifCode.startsWith('deux-');
+  const isSeulOrTest = tarifCode === 'test' || tarifCode.startsWith('seul-');
+
+  if (!document.getElementById('f-date').value) return false;
+
+  const existingClient = clientChoice !== '__new__' ? getClientById(clientChoice) : null;
+  const existingDogCount = existingClient ? existingClient.dogs.length : 1;
+
+  if (isDeux && existingDogCount < 2 && !document.getElementById('f-second-dog-name').value.trim()) return false;
+
+  if (tarifCode === 'test' && existingClient && existingClient.dogs.length === 2 && getSelectedDogPickerIds().length === 0) return false;
+  if (tarifCode.startsWith('seul-') && existingClient && existingClient.dogs.length === 2 && !getSelectedDogPickerId()) return false;
+
+  if (requiredDays) {
+    if (isDeux) {
+      if (getSelectedDaysForSlot('dog1').length !== requiredDays) return false;
+      if (getSelectedDaysForSlot('dog2').length !== requiredDays) return false;
+    } else {
+      if (getSelectedDaysForSlot('solo').length !== requiredDays) return false;
+    }
+  }
+
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  if (isNaN(amount) || amount <= 0) return false;
+
+  return true;
+}
+function refreshSubmitState() {
+  document.querySelector('#entry-form button[type=submit]').disabled = !isFormComplete();
+}
+
+document.getElementById('entry-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const errorBox = document.getElementById('form-error');
+  errorBox.style.display = 'none';
+  const showError = (msg) => { errorBox.textContent = msg; errorBox.style.display = 'block'; };
+  const submitBtn = document.querySelector('#entry-form button[type=submit]');
+
+  const date = document.getElementById('f-date').value;
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  const note = document.getElementById('f-note').value.trim();
+  const clientSelect = document.getElementById('f-client');
+  const clientChoice = clientSelect.value;
+
+  if (!clientChoice) return showError('Choisis un client dans la liste (ou crée-en un nouveau).');
+  if (document.getElementById('f-formule').value === 'custom') return showError('Choisis une formule.');
+  if (!date) return showError('Renseigne une date.');
+  const activeMonth = settings.activeMonth || currentMonthKey();
+  if (date < firstDayOfMonth(activeMonth)) {
+    return showError(`Impossible d'ajouter un encaissement sur un mois déjà clôturé. Choisis une date à partir du ${new Date(firstDayOfMonth(activeMonth) + 'T00:00:00').toLocaleDateString('fr-FR')}.`);
+  }
+  if (isNaN(amount) || amount <= 0) return showError('Renseigne un montant valide (supérieur à 0).');
+
+  const tarifCode = getTarifCode();
+  const requiredDays = tarifRequiredDays(tarifCode);
+  const isDeux = tarifCode.startsWith('deux-');
+  const isSeulOrTest = tarifCode === 'test' || tarifCode.startsWith('seul-');
+
+  if (isDeux) {
+    const existing = clientChoice !== '__new__' ? getClientById(clientChoice) : null;
+    if (existing && existing.dogs.some(d => !d.isTrial && (d.walkDays || []).length > 0)) {
+      return showError('Abonnement "2 chiens" indisponible pour ce client en cours de mois — passe par la clôture du mois pour changer de formule.');
+    }
+  }
+
+  let dogName, ownerName;
+  if (clientChoice === '__new__') {
+    dogName = document.getElementById('f-dog-name').value.trim();
+    ownerName = document.getElementById('f-owner-name').value.trim();
+    if (!dogName || !ownerName) return showError('Renseigne le nom du chien et du maître pour créer le client.');
+  }
+
+  const existingClient = clientChoice !== '__new__' ? getClientById(clientChoice) : null;
+  const existingDogCount = existingClient ? existingClient.dogs.length : 1;
+
+  let secondDogName = null;
+  if (isDeux && existingDogCount < 2) {
+    secondDogName = document.getElementById('f-second-dog-name').value.trim();
+    if (!secondDogName) return showError('Renseigne le nom du 2e chien pour l\'abonnement 2 chiens.');
+  } else if (secondDogManuallyAdded && existingDogCount < 2) {
+    const val = document.getElementById('f-second-dog-name').value.trim();
+    if (val) secondDogName = val; // optionnel hors tarif "2 chiens" : on l'ajoute seulement si rempli
+  }
+
+  let pickedDogId = null;
+  let pickedDogIds = [];
+  if (existingClient && existingClient.dogs.length === 2) {
+    if (tarifCode === 'test') {
+      pickedDogIds = getSelectedDogPickerIds();
+      if (pickedDogIds.length === 0) return showError('Choisis pour quel(s) chien(s) est cette balade test.');
+    } else if (tarifCode.startsWith('seul-')) {
+      pickedDogId = getSelectedDogPickerId();
+      if (!pickedDogId) return showError('Choisis pour quel chien est cette balade.');
+    }
+  }
+
+  let day1 = [], day2 = [];
+  if (requiredDays) {
+    if (isDeux) {
+      day1 = getSelectedDaysForSlot('dog1');
+      day2 = getSelectedDaysForSlot('dog2');
+      if (day1.length !== requiredDays || day2.length !== requiredDays) {
+        return showError(`Sélectionne exactement ${requiredDays} jour${requiredDays > 1 ? 's' : ''} de balade pour chacun des deux chiens.`);
+      }
+    } else {
+      day1 = getSelectedDaysForSlot('solo');
+      if (day1.length !== requiredDays) {
+        return showError(`Sélectionne exactement ${requiredDays} jour${requiredDays > 1 ? 's' : ''} de balade (${day1.length}/${requiredDays} pour l'instant).`);
+      }
+    }
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enregistrement...';
+
+  try {
+    let clientId = clientChoice;
+    if (clientChoice === '__new__') {
+      const newClient = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        ownerName,
+        dogs: [{ id: null, name: dogName, walkDays: [], isTrial: false, trialDate: null }]
+      };
+      newClient.dogs[0].id = newDogId(newClient);
+      clients.push(newClient);
+      clientId = newClient.id;
+    }
+    const client = getClientById(clientId);
+
+    const justAddedNewSecondDog = !!secondDogName && client.dogs.length < 2;
+    if (justAddedNewSecondDog) {
+      client.dogs.push({ id: newDogId(client), name: secondDogName, walkDays: [], isTrial: false, trialDate: null });
+    }
+
+    if (isDeux) {
+      setDogWalkDays(client.dogs[0], day1, date);
+      client.dogs[0].isTrial = false;
+      client.dogs[0].trialDate = null;
+      setDogWalkDays(client.dogs[1], day2, date);
+      client.dogs[1].isTrial = false;
+      client.dogs[1].trialDate = null;
+      client.subscriptionType = 'deux';
+    } else if (tarifCode === 'test') {
+      const targets = pickedDogIds.length > 0
+        ? pickedDogIds.map(id => getDogById(client, id)).filter(Boolean)
+        : [justAddedNewSecondDog ? client.dogs[1] : client.dogs[0]];
+      targets.forEach(d => { d.isTrial = true; d.trialDate = date; });
+    } else if (requiredDays) {
+      const targetDog = pickedDogId ? getDogById(client, pickedDogId)
+        : (justAddedNewSecondDog ? client.dogs[1] : client.dogs[0]);
+      if (targetDog) {
+        setDogWalkDays(targetDog, day1, date);
+        targetDog.isTrial = false;
+        targetDog.trialDate = null;
+      }
+      client.subscriptionType = 'seul';
+    }
+    await saveClients();
+
+    entries.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      date, amount, note, clientId, paid: false,
+      formuleLabel: tarifCode !== 'custom'
+        ? tarifNoteLabel(tarifCode) + (tarifCode === 'test' && pickedDogIds.length > 1 ? ` (${pickedDogIds.length} chiens)` : '')
+        : null
+    });
+    await saveEntries();
+    document.getElementById('entry-form').reset();
+    document.getElementById('client-new-fields').style.display = 'none';
+    document.getElementById('f-second-dog-name').value = '';
+    secondDogManuallyAdded = false;
+    updateScheduleUI();
+    closeAddPanel();
+    render();
+  } catch (err) {
+    console.error('Échec de l\'enregistrement', err);
+    showError('Erreur lors de l\'enregistrement : ' + (err && err.message ? err.message : String(err)));
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Ajouter l'encaissement";
+  }
+});
+
+// Settings inputs
+function bindSetting(id, key, isFloat = true) {
+  document.getElementById(id).addEventListener('change', async (ev) => {
+    settings[key] = isFloat ? parseFloat(ev.target.value) : ev.target.value;
+    await saveSettings();
+    render();
+  });
+}
+bindSetting('s-taux', 'tauxUrssaf');
+bindSetting('s-acre-pct', 'acrePct');
+bindSetting('s-sjr', 'sjr');
+bindSetting('s-are', 'areJournaliere');
+bindSetting('s-plafond', 'plafond');
+bindSetting('s-target-salaire', 'targetNetSalaire');
+bindSetting('s-essence', 'essenceMensuelle');
+bindSetting('s-tmi', 'tmi');
+
+document.getElementById('s-tarif-test').addEventListener('change', async (ev) => {
+  settings.tarifs.test = parseFloat(ev.target.value);
+  await saveSettings();
+});
+for (let i = 1; i <= 5; i++) {
+  document.getElementById('s-tarif-seul-' + i).addEventListener('change', async (ev) => {
+    settings.tarifs.seul[i - 1] = parseFloat(ev.target.value);
+    await saveSettings();
+  });
+  document.getElementById('s-tarif-deux-' + i).addEventListener('change', async (ev) => {
+    settings.tarifs.deux[i - 1] = parseFloat(ev.target.value);
+    await saveSettings();
+  });
+}
+
+document.getElementById('s-acre-toggle').addEventListener('click', async () => {
+  settings.acreActive = !settings.acreActive;
+  await saveSettings();
+  render();
+});
+
+document.getElementById('s-are-toggle').addEventListener('click', async () => {
+  settings.areActive = !settings.areActive;
+  await saveSettings();
+  render();
+});
+
+document.getElementById('s-micro-created-toggle').addEventListener('click', async () => {
+  settings.microCreatedThisYear = !settings.microCreatedThisYear;
+  await saveSettings();
+  render();
+});
+
+document.getElementById('s-micro-creation-date').addEventListener('change', async (ev) => {
+  settings.microCreationDate = ev.target.value || null;
+  await saveSettings();
+  render();
+});
+
+document.getElementById('week-view-prev').addEventListener('click', () => shiftPlanningWeek(-1));
+document.getElementById('week-view-next').addEventListener('click', () => shiftPlanningWeek(1));
+document.getElementById('week-view-today-btn').addEventListener('click', () => {
+  planningWeekStart = mondayOfWeek(todayISO());
+  renderWeekView();
+});
+
+// Set default date to today
+document.getElementById('f-date').valueAsDate = new Date();
+
+// Réinitialisation complète (utile en cas de vieilles données de test)
+const resetOverlay = document.getElementById('reset-overlay');
+const resetModal = document.getElementById('reset-modal');
+
+document.getElementById('open-reset-modal').addEventListener('click', () => {
+  document.getElementById('reset-error').style.display = 'none';
+  resetOverlay.classList.add('open');
+  resetModal.classList.add('open');
+  resetModal.setAttribute('aria-hidden', 'false');
+});
+function closeResetModal() {
+  resetOverlay.classList.remove('open');
+  resetModal.classList.remove('open');
+  resetModal.setAttribute('aria-hidden', 'true');
+}
+document.getElementById('reset-cancel').addEventListener('click', closeResetModal);
+resetOverlay.addEventListener('click', closeResetModal);
+
+document.getElementById('reset-confirm').addEventListener('click', async () => {
+  const errorBox = document.getElementById('reset-error');
+  errorBox.style.display = 'none';
+  const btn = document.getElementById('reset-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Suppression...';
+  try {
+    for (const key of ['entries', 'clients', 'settings']) {
+      try { await window.storage.delete(key); } catch (e) { /* déjà absent, ignorer */ }
+    }
+    entries = [];
+    clients = [];
+    settings = { ...DEFAULT_SETTINGS };
+    closeResetModal();
+    render();
+  } catch (err) {
+    console.error('Échec de la réinitialisation', err);
+    errorBox.textContent = 'Erreur lors de la réinitialisation : ' + (err && err.message ? err.message : String(err));
+    errorBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Oui, tout supprimer';
+  }
+});
+
+// Proposition d'arrêt d'abonnement au moment de la suppression d'un encaissement
+const stopSubOverlay = document.getElementById('stop-sub-overlay');
+const stopSubModal = document.getElementById('stop-sub-modal');
+let pendingStopSubClientId = null;
+
+function closeStopSubModal() {
+  stopSubOverlay.classList.remove('open');
+  stopSubModal.classList.remove('open');
+  stopSubModal.setAttribute('aria-hidden', 'true');
+  pendingStopSubClientId = null;
+}
+document.getElementById('stop-sub-no').addEventListener('click', () => {
+  closeStopSubModal();
+  render();
+});
+stopSubOverlay.addEventListener('click', () => {
+  closeStopSubModal();
+  render();
+});
+document.getElementById('stop-sub-yes').addEventListener('click', async () => {
+  const client = pendingStopSubClientId ? getClientById(pendingStopSubClientId) : null;
+  if (client) {
+    (client.dogs || []).forEach(d => { d.walkDays = []; d.subscriptionSince = null; });
+    await saveClients();
+  }
+  closeStopSubModal();
+  render();
+});
+
+loadData();
+</script>
+</body>
+</html>
