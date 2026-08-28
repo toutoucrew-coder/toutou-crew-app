@@ -5038,9 +5038,8 @@ async function buildInvoicePdfBlob(client, meta) {
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('Toutou Crew', 15, 46);
+  doc.text(`${settings.businessOwnerName || ''}${settings.businessOwnerName ? ' — EI' : ''}`, 15, 46);
   doc.setFont('helvetica', 'normal');
-  doc.text(settings.businessOwnerName || '', 15, 51);
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
   const vendorEndY = printLines(doc, [
     settings.businessAddress,
@@ -5049,16 +5048,16 @@ async function buildInvoicePdfBlob(client, meta) {
     settings.businessPhone ? `Téléphone : ${settings.businessPhone}` : '',
     settings.businessEmail ? `Email : ${settings.businessEmail}` : '',
     settings.businessWebsite ? `Site : ${settings.businessWebsite}` : '',
-  ], 15, 56);
+  ], 15, 51);
 
   doc.setFont('helvetica', 'bold');
-  doc.text(client ? client.ownerName : '', 120, 51);
+  doc.text(client ? client.ownerName : '', 120, 46);
   doc.setFont('helvetica', 'normal');
   const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
   const clientEndY = printLines(doc, [
     client && client.address ? client.address : '',
     clientCityLine,
-  ], 120, 56);
+  ], 120, 51);
 
   let y = Math.max(vendorEndY, clientEndY) + 12;
   doc.setFontSize(9);
@@ -5088,8 +5087,6 @@ async function buildInvoicePdfBlob(client, meta) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text("TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM", 15, y);
-  y += 5;
-  doc.text('Entreprise individuelle (EI)', 15, y);
   y += 6;
   doc.text(meta.paymentLine, 15, y);
 
@@ -5128,8 +5125,7 @@ async function openInvoice(entryId) {
     </div>
     <div style="display:flex; justify-content:space-between; gap:24px; font-size:0.85rem;">
       <div>
-        <strong>Toutou Crew</strong><br>
-        ${escapeHtml(settings.businessOwnerName || '')}<br>
+        <strong>${escapeHtml(settings.businessOwnerName || '')}${settings.businessOwnerName ? ' — EI' : ''}</strong><br>
         ${escapeHtml(settings.businessAddress || '')}<br>
         ${[settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ') ? escapeHtml([settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ')) + '<br>' : ''}
         SIRET : ${escapeHtml(settings.businessSiret || '')}
@@ -5138,7 +5134,6 @@ async function openInvoice(entryId) {
         ${settings.businessWebsite ? '<br>Site : ' + escapeHtml(settings.businessWebsite) : ''}
       </div>
       <div>
-        <br>
         <strong>${client ? escapeHtml(client.ownerName) : ''}</strong><br>
         ${client && client.address ? escapeHtml(client.address) + '<br>' : ''}
         ${clientCityLine ? escapeHtml(clientCityLine) : ''}
@@ -5152,7 +5147,7 @@ async function openInvoice(entryId) {
       </tbody>
     </table>
     <div class="invoice-total">Total (TVA non applicable) : ${fmt(entry.amount)}</div>
-    <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM<br>Entreprise individuelle (EI)</p>
+    <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM</p>
     <p style="font-size:0.85rem;">${paymentLine}</p>
   `;
 
