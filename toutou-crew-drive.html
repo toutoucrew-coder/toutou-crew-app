@@ -1777,6 +1777,17 @@
     <label for="cd-address">Adresse</label>
     <input type="text" id="cd-address" style="margin-bottom:14px;">
 
+    <div style="display:flex; gap:8px; margin-bottom:14px;">
+      <div style="flex:0 0 110px;">
+        <label for="cd-postal-code">Code postal</label>
+        <input type="text" id="cd-postal-code" inputmode="numeric">
+      </div>
+      <div style="flex:1;">
+        <label for="cd-city">Ville</label>
+        <input type="text" id="cd-city">
+      </div>
+    </div>
+
     <label for="cd-building-code">Code immeuble</label>
     <input type="text" id="cd-building-code" style="margin-bottom:14px;">
 
@@ -2815,6 +2826,8 @@ function updateValidateChangesState() {
 // et gère l'affichage conditionnel du bloc conjoint / téléphone conjoint.
 function renderClientContactFields(draft) {
   document.getElementById('cd-address').value = draft.address || '';
+  document.getElementById('cd-postal-code').value = draft.postalCode || '';
+  document.getElementById('cd-city').value = draft.city || '';
   document.getElementById('cd-building-code').value = draft.buildingCode || '';
   document.getElementById('cd-floor').value = draft.floor || '';
   document.getElementById('cd-phone-primary').value = draft.phonePrimary || '';
@@ -2938,6 +2951,16 @@ document.getElementById('cd-address').addEventListener('change', (ev) => {
   clientDetailDraft.address = ev.target.value.trim() || null;
   updateValidateChangesState();
 });
+document.getElementById('cd-postal-code').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.postalCode = ev.target.value.trim() || null;
+  updateValidateChangesState();
+});
+document.getElementById('cd-city').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.city = ev.target.value.trim() || null;
+  updateValidateChangesState();
+});
 document.getElementById('cd-building-code').addEventListener('change', (ev) => {
   if (!clientDetailDraft) return;
   clientDetailDraft.buildingCode = ev.target.value.trim() || null;
@@ -3049,6 +3072,8 @@ document.getElementById('client-changes-save').addEventListener('click', async (
   if (realClient && clientDetailDraft) {
     realClient.ownerName = clientDetailDraft.ownerName;
     realClient.address = clientDetailDraft.address || null;
+    realClient.postalCode = clientDetailDraft.postalCode || null;
+    realClient.city = clientDetailDraft.city || null;
     realClient.buildingCode = clientDetailDraft.buildingCode || null;
     realClient.floor = clientDetailDraft.floor || null;
     realClient.phonePrimary = clientDetailDraft.phonePrimary || null;
@@ -4983,6 +5008,8 @@ async function buildInvoicePdfBlob(client, meta) {
   doc.setFont('helvetica', 'normal');
   doc.text(client ? client.ownerName : '', 120, 49);
   if (client && client.address) doc.text(client.address, 120, 54);
+  const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
+  if (clientCityLine) doc.text(clientCityLine, 120, client.address ? 59 : 54);
 
   let y = 70;
   doc.setFont('helvetica', 'bold');
@@ -5021,6 +5048,7 @@ async function openInvoice(entryId) {
   const entry = entries.find(e => e.id === entryId);
   if (!entry) return;
   const client = entry.clientId ? getClientById(entry.clientId) : null;
+  const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
 
   if (!entry.invoiceNumber) {
     entry.invoiceNumber = settings.nextInvoiceNumber || 1;
@@ -5055,7 +5083,8 @@ async function openInvoice(entryId) {
       <div>
         <strong>Client</strong><br>
         ${client ? escapeHtml(client.ownerName) : ''}<br>
-        ${client && client.address ? escapeHtml(client.address) : ''}
+        ${client && client.address ? escapeHtml(client.address) + '<br>' : ''}
+        ${clientCityLine ? escapeHtml(clientCityLine) : ''}
       </div>
     </div>
     <table>
