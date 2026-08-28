@@ -797,6 +797,35 @@
   }
   .modal-btn.secondary:hover { color: var(--warning); border-color: var(--warning); }
 
+  .entry-row .invoice-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px 8px;
+  }
+  .entry-row .invoice-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .invoice-print-only { display: none; }
+  @media print {
+    body > *:not(.invoice-print-only) { display: none !important; }
+    .invoice-print-only {
+      display: block !important;
+      padding: 40px;
+      font-family: 'Inter', sans-serif;
+      color: #000;
+    }
+    .invoice-print-only h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; margin: 0 0 4px; }
+    .invoice-print-only table { width: 100%; border-collapse: collapse; margin: 24px 0; }
+    .invoice-print-only th, .invoice-print-only td { text-align: left; padding: 8px 0; border-bottom: 1px solid #ccc; }
+    .invoice-print-only .invoice-total { text-align: right; font-weight: 700; font-size: 1.1rem; margin-top: 12px; }
+  }
+
   .side-panel {
     position: fixed;
     top: 0; right: 0;
@@ -1481,6 +1510,17 @@
 
     <div class="subpanel" data-group="reglages" id="subpanel-site">
     <div class="settings-row">
+      <label style="margin-bottom:10px;">Informations de facturation</label>
+      <label for="s-biz-name">Nom et prénom</label>
+      <input type="text" id="s-biz-name" placeholder="Camille Vigreux">
+      <label for="s-biz-address" style="margin-top:8px;">Adresse</label>
+      <input type="text" id="s-biz-address" placeholder="12 rue Merlin, 75019 Paris">
+      <label for="s-biz-siret" style="margin-top:8px;">N° SIRET</label>
+      <input type="text" id="s-biz-siret" placeholder="123 456 789 00012">
+      <div class="note">Ces informations apparaissent sur les factures générées pour tes clients.</div>
+    </div>
+
+    <div class="settings-row">
       <label for="s-target-salaire">Salaire net visé (ton ancien "net")</label>
       <input type="number" id="s-target-salaire" step="10" min="0">
       <div class="note">Par défaut ≈ 4 212 €/mois (75 % de ton brut cadre de 5616,15 €). C'est ce montant que l'objectif de balades cherche à égaler, ARE comprise.</div>
@@ -1832,6 +1872,8 @@
   <button class="modal-btn secondary" id="payment-method-cancel" style="width:100%;">Annuler</button>
 </div>
 
+<div id="invoice-print-area" class="invoice-print-only"></div>
+
 <script>
 // ============================================================
 // Stockage Google Drive — remplace window.storage (Claude) par un
@@ -1999,7 +2041,11 @@ const DEFAULT_SETTINGS = {
     deux: [250, 485, 700, 920, 1125]
   },
   activeMonth: currentMonthKey(),
-  closedMonths: []
+  closedMonths: [],
+  businessOwnerName: '',
+  businessAddress: '',
+  businessSiret: '',
+  nextInvoiceNumber: 1
 };
 
 let entries = [];
@@ -3672,6 +3718,7 @@ function renderEntriesList(monthKey) {
         <div class="entry-row-bottom">
           <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}${isPaid && e.paymentMethod ? ' · ' + paymentMethodLabel(e.paymentMethod) : ''}</span>
           <div class="row-actions">
+            <button class="invoice-btn" data-id="${e.id}" title="Générer la facture">🧾</button>
             <button class="paid-toggle ${isPaid ? 'paid' : 'pending'}" data-id="${e.id}">${isPaid ? '✅ Reçu' : '⏳ En attente'}</button>
           </div>
         </div>
@@ -3696,6 +3743,10 @@ function renderEntriesList(monthKey) {
       await saveEntries();
       render();
     });
+  });
+
+  list.querySelectorAll('.invoice-btn').forEach(btn => {
+    btn.addEventListener('click', () => openInvoice(btn.dataset.id));
   });
 
   list.querySelectorAll('.del').forEach(btn => {
@@ -3760,6 +3811,7 @@ function renderHistory() {
             <div class="entry-row-bottom">
               <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}${isPaid && e.paymentMethod ? ' · ' + paymentMethodLabel(e.paymentMethod) : ''}</span>
               <div class="row-actions">
+                <button class="invoice-btn" data-id="${e.id}" title="Générer la facture">🧾</button>
                 <button class="paid-toggle ${isPaid ? 'paid' : 'pending'}" data-id="${e.id}">${isPaid ? '✅ Reçu' : '⏳ En attente'}</button>
               </div>
             </div>
@@ -3804,6 +3856,13 @@ function renderHistory() {
       entry.paymentMethod = null;
       await saveEntries();
       render();
+    });
+  });
+
+  container.querySelectorAll('.invoice-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      openInvoice(btn.dataset.id);
     });
   });
 
@@ -3899,6 +3958,9 @@ function renderUnpaidView() {
 }
 
 function renderSettings() {
+  document.getElementById('s-biz-name').value = settings.businessOwnerName || '';
+  document.getElementById('s-biz-address').value = settings.businessAddress || '';
+  document.getElementById('s-biz-siret').value = settings.businessSiret || '';
   document.getElementById('s-taux').value = settings.tauxUrssaf;
   document.getElementById('s-acre-pct').value = settings.acrePct;
   document.getElementById('s-sjr').value = settings.sjr;
@@ -4655,6 +4717,9 @@ function bindSetting(id, key, isFloat = true) {
     render();
   });
 }
+bindSetting('s-biz-name', 'businessOwnerName', false);
+bindSetting('s-biz-address', 'businessAddress', false);
+bindSetting('s-biz-siret', 'businessSiret', false);
 bindSetting('s-taux', 'tauxUrssaf');
 bindSetting('s-acre-pct', 'acrePct');
 bindSetting('s-sjr', 'sjr');
@@ -4796,6 +4861,58 @@ paymentMethodModal.querySelectorAll('[data-method]').forEach(btn => {
     render();
   });
 });
+
+// Génération de facture PDF (via impression navigateur) pour un encaissement.
+// Le n° de facture est attribué une seule fois (numérotation continue) et
+// reste identique si on réimprime la même facture plus tard.
+async function openInvoice(entryId) {
+  const entry = entries.find(e => e.id === entryId);
+  if (!entry) return;
+  const client = entry.clientId ? getClientById(entry.clientId) : null;
+
+  if (!entry.invoiceNumber) {
+    entry.invoiceNumber = settings.nextInvoiceNumber || 1;
+    entry.invoiceDate = todayISO();
+    settings.nextInvoiceNumber = (settings.nextInvoiceNumber || 1) + 1;
+    await saveEntries();
+    await saveSettings();
+  }
+
+  const numLabel = String(entry.invoiceNumber).padStart(4, '0');
+  const dateEmission = new Date(entry.invoiceDate + 'T00:00:00').toLocaleDateString('fr-FR');
+  const datePrestation = new Date(entry.date + 'T00:00:00').toLocaleDateString('fr-FR');
+  const designation = entry.formuleLabel || entry.note || 'Prestation de promenade / éducation canine';
+  const paymentLine = entry.paid !== false
+    ? `Réglé${entry.paymentMethod ? ' — ' + paymentMethodLabel(entry.paymentMethod) : ''}`
+    : 'À régler';
+
+  document.getElementById('invoice-print-area').innerHTML = `
+    <h1>Facture n° ${numLabel}</h1>
+    <p>Date d'émission : ${dateEmission}</p>
+    <div style="display:flex; justify-content:space-between; margin-top:24px; gap:24px;">
+      <div>
+        <strong>${escapeHtml(settings.businessOwnerName || '')}</strong><br>
+        ${escapeHtml(settings.businessAddress || '')}<br>
+        SIRET : ${escapeHtml(settings.businessSiret || '')}
+      </div>
+      <div>
+        <strong>Client</strong><br>
+        ${client ? escapeHtml(client.ownerName) : ''}<br>
+        ${client && client.address ? escapeHtml(client.address) : ''}
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Désignation</th><th>Date</th><th style="text-align:right;">Montant</th></tr></thead>
+      <tbody>
+        <tr><td>${escapeHtml(designation)}</td><td>${datePrestation}</td><td style="text-align:right;">${fmt(entry.amount)}</td></tr>
+      </tbody>
+    </table>
+    <div class="invoice-total">Total TTC : ${fmt(entry.amount)}</div>
+    <p style="margin-top:24px; font-size:0.85rem;">TVA non applicable, art. 293 B du CGI — Dispensé d'immatriculation au RCS et au RM</p>
+    <p style="font-size:0.85rem;">${paymentLine}</p>
+  `;
+  window.print();
+}
 
 // Proposition d'arrêt d'abonnement au moment de la suppression d'un encaissement
 const stopSubOverlay = document.getElementById('stop-sub-overlay');
