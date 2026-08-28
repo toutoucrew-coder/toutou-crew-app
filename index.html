@@ -878,7 +878,7 @@
     margin-bottom: 4px;
   }
   .goal-header .goal-title { font-size: 0.85rem; font-weight: 600; }
-  .goal-header .goal-count { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-dim); }
+  .goal-header .goal-count { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-dim); margin-left: auto; text-align: right; }
   .goal-header .goal-count strong { color: #e6743f; font-size: 1rem; }
 
   .grid-summary {
@@ -1392,7 +1392,7 @@
       <div class="tag-card-divider"></div>
 
       <div class="goal-header">
-        <span class="goal-title" id="goal-title">Objectif pour égaler ton ancien salaire (avec ARE)</span>
+        <span class="goal-title" id="goal-title">Objectif</span>
         <span class="goal-count"><strong id="goal-count">0</strong> / <span id="goal-target">0</span> abonnements équiv.</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="goal-progress-fill" style="width:0%;"></div></div>
@@ -3596,9 +3596,7 @@ function render() {
   document.getElementById('goal-count').textContent = stats.abonnementsEquivalents.toFixed(1);
   document.getElementById('goal-target').textContent = Math.ceil(objectifPlein.abonnements);
   document.getElementById('goal-progress-fill').style.width = goalPct.toFixed(1) + '%';
-  document.getElementById('goal-title').textContent = settings.areActive
-    ? 'Objectif pour égaler ton ancien salaire (avec ARE)'
-    : 'Objectif pour égaler ton ancien salaire';
+  document.getElementById('goal-title').textContent = 'Objectif';
   const degressifNote = document.getElementById('goal-note-degressif');
   if (settings.areActive) {
     degressifNote.textContent =
