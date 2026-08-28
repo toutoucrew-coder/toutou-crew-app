@@ -24,6 +24,7 @@
     --radius: 14px;
   }
   * { box-sizing: border-box; }
+  html { overflow-x: hidden; }
   body {
     margin: 0;
     background: var(--bg);
@@ -31,7 +32,9 @@
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
+    overflow-x: hidden;
   }
+  body.panel-open { position: fixed; width: 100%; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 28px 18px 60px; }
   .gauth-gate {
     position: fixed;
@@ -815,6 +818,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 2px;
     margin-bottom: 12px;
     display: flex;
@@ -3974,10 +3978,23 @@ document.getElementById('open-add-client-only').addEventListener('click', () => 
 const sidePanel = document.getElementById('side-panel');
 const panelOverlay = document.getElementById('panel-overlay');
 
+let panelScrollY = 0;
+function lockBodyScroll() {
+  panelScrollY = window.scrollY;
+  document.body.style.top = -panelScrollY + 'px';
+  document.body.classList.add('panel-open');
+}
+function unlockBodyScroll() {
+  document.body.classList.remove('panel-open');
+  document.body.style.top = '';
+  window.scrollTo(0, panelScrollY);
+}
+
 function openAddPanel() {
   sidePanel.classList.add('open');
   panelOverlay.classList.add('open');
   sidePanel.setAttribute('aria-hidden', 'false');
+  lockBodyScroll();
   const activeMonth = settings.activeMonth || currentMonthKey();
   const today = new Date();
   // Pas d'attribut "min" natif ici : la validation en dur (ci-dessous, à la
@@ -4002,6 +4019,7 @@ function closeAddPanel() {
   sidePanel.classList.remove('open');
   panelOverlay.classList.remove('open');
   sidePanel.setAttribute('aria-hidden', 'true');
+  unlockBodyScroll();
 }
 document.getElementById('open-add-panel').addEventListener('click', openAddPanel);
 document.getElementById('close-add-panel').addEventListener('click', closeAddPanel);
