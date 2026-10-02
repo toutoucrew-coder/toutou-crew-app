@@ -641,6 +641,88 @@
     cursor: pointer;
   }
   .planning-client-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .planning-client-chip.absent { text-decoration: line-through; opacity: 0.55; }
+  .planning-day-absent { border-style: dashed; }
+  .planning-absence-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(230, 116, 63, 0.15);
+    color: #e6743f;
+    margin-left: 6px;
+  }
+
+  .absence-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .absence-card-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .absence-card-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; }
+  .absence-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding-top: 10px;
+    margin-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .absence-row-title { font-weight: 600; font-size: 0.88rem; }
+  .absence-row-meta { font-size: 0.76rem; color: var(--text-dim); margin-top: 2px; }
+  .absence-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .absence-small-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .absence-small-btn:hover { background: var(--surface-2); }
+  .absence-small-btn.primary { background: var(--accent); color: var(--btn-text); border: none; }
+  .absence-small-btn.primary:hover { background: var(--accent-soft); }
+  .absence-small-btn:disabled, .absence-small-btn:disabled:hover { opacity: 0.5; cursor: not-allowed; background: none; }
+  .absence-type-chips { display: flex; gap: 8px; margin-bottom: 14px; }
+  .absence-type-chips .day-chip { padding: 10px 0; font-size: 0.85rem; }
+  .abs-notify-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .abs-notify-row { flex-wrap: wrap; }
+  .abs-notify-info { flex: 1 1 100%; min-width: 0; }
+  .abs-notify-row .absence-row-actions { margin-left: auto; }
+
+  .missed-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(230, 116, 63, 0.15);
+    color: #e6743f;
+    margin-top: 4px;
+  }
+  .renewal-credit-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: #e6743f;
+  }
+  .renewal-credit-line input { width: 90px; padding: 6px 8px; font-size: 0.82rem; text-align: right; }
   .planning-client-chip.trial {
     background: rgba(230, 116, 63, 0.15);
     border: 1px solid #e6743f;
@@ -1387,6 +1469,14 @@
   <div class="panel" id="panel-planning">
     <div class="page-title">Planning</div>
 
+    <div class="absence-card">
+      <div class="absence-card-header">
+        <span class="absence-card-title">Absences</span>
+        <button type="button" class="add-btn-inline" id="open-absence-modal">+ Déclarer une absence</button>
+      </div>
+      <div id="absence-list"></div>
+    </div>
+
     <div class="day-view-card">
       <div class="day-view-nav">
         <button type="button" id="week-view-prev" aria-label="Semaine précédente">‹</button>
@@ -1839,6 +1929,7 @@
   </div>
 
   <div class="subpanel" data-group="fiche-client" id="subpanel-cd-dogs">
+    <div id="cd-missed-walks"></div>
     <div id="cd-dogs-section"></div>
     <button class="add-client-btn" id="cd-add-second-dog" style="display:none;">+ Ajouter un 2e chien</button>
   </div>
@@ -1907,6 +1998,36 @@
     <button class="modal-btn secondary" data-method="cesu">🎫 CESU</button>
   </div>
   <button class="modal-btn secondary" id="payment-method-cancel" style="width:100%;">Annuler</button>
+</div>
+
+<div class="modal-overlay" id="absence-overlay"></div>
+<div class="modal" id="absence-modal" aria-hidden="true">
+  <div id="absence-step-form">
+    <div class="modal-title">Déclarer une absence</div>
+    <div class="absence-type-chips" id="abs-type-chips">
+      <div class="day-chip active" data-type="maladie">🤒 Maladie</div>
+      <div class="day-chip" data-type="vacances">🌴 Vacances</div>
+    </div>
+    <label for="abs-start">Du</label>
+    <input type="date" id="abs-start" style="margin-bottom:12px;">
+    <label for="abs-end">Au</label>
+    <input type="date" id="abs-end" style="margin-bottom:12px;">
+    <div class="note" id="abs-hint" style="margin-bottom:8px;"></div>
+    <div class="note" id="abs-preview" style="margin-bottom:12px;"></div>
+    <div class="full" id="abs-error" style="display:none;"></div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn secondary" id="abs-cancel">Annuler</button>
+      <button type="button" class="modal-btn primary" id="abs-save">Enregistrer et prévenir</button>
+    </div>
+  </div>
+  <div id="absence-step-notify" style="display:none;">
+    <div class="modal-title" id="abs-notify-title">Prévenir les clients</div>
+    <div class="modal-text" id="abs-notify-intro" style="margin-bottom:10px;"></div>
+    <div id="abs-notify-list"></div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button type="button" class="modal-btn primary" id="abs-notify-done">Terminé</button>
+    </div>
+  </div>
 </div>
 
 <div id="invoice-print-area" class="invoice-print-only"></div>
@@ -2145,7 +2266,8 @@ const DEFAULT_SETTINGS = {
   businessEmail: '',
   businessWebsite: '',
   nextInvoiceNumber: 1,
-  urssafQuarterly: false
+  urssafQuarterly: false,
+  absences: []
 };
 
 let entries = [];
@@ -2328,15 +2450,19 @@ function renderClientsSettings() {
   const active = sorted.filter(c => !c.archived);
   const past = sorted.filter(c => c.archived);
 
-  const rowHtml = c => `
+  const rowHtml = c => {
+    const owed = owedWalks(c);
+    return `
     <div class="client-summary-row" data-id="${c.id}">
       <div class="client-summary-info">
         <div class="client-summary-name">${escapeHtml(clientLabel(c))}</div>
         <div class="client-summary-status">${clientStatusLabel(c)}</div>
+        ${owed.count ? `<span class="missed-badge">${owed.count} balade${owed.count > 1 ? 's' : ''} due${owed.count > 1 ? 's' : ''} · ${fmt(owed.total)}</span>` : ''}
       </div>
       <span style="color:var(--text-dim);">›</span>
     </div>
   `;
+  };
 
   activeContainer.innerHTML = active.length > 0
     ? active.map(rowHtml).join('')
@@ -2935,6 +3061,7 @@ function openClientDetail(id) {
   document.getElementById('cd-owner-name').value = clientDetailDraft.ownerName;
   renderClientContactFields(clientDetailDraft);
   renderClientDetailDogs(clientDetailDraft);
+  renderMissedWalksBlock();
   updateValidateChangesState();
 
   refreshClientDetailPaymentsTab();
@@ -3197,13 +3324,14 @@ function renderWeekView() {
     const pairs = [...recurringPairs, ...trialPairs]
       .sort((a, b) => perDogLabel(a.client, a.dog).localeCompare(perDogLabel(b.client, b.dog)));
     const isToday = dateStr === todayStr;
+    const absence = absenceForDate(dateStr);
     const chipsHtml = pairs.length > 0
-      ? pairs.map(({ client, dog, kind }) => `<span class="planning-client-chip${kind === 'test' ? ' trial' : ''}" data-client-id="${client.id}">${escapeHtml(perDogLabel(client, dog))}</span>`).join('')
+      ? pairs.map(({ client, dog, kind }) => `<span class="planning-client-chip${kind === 'test' ? ' trial' : ''}${absence ? ' absent' : ''}" data-client-id="${client.id}">${escapeHtml(perDogLabel(client, dog))}</span>`).join('')
       : '<div class="empty" style="padding:16px;">Aucun chien ce jour-là.</div>';
     return `
-      <div class="planning-day-card${isToday ? ' planning-day-today' : ''}">
+      <div class="planning-day-card${isToday ? ' planning-day-today' : ''}${absence ? ' planning-day-absent' : ''}">
         <div class="planning-day-header">
-          <span>${full} ${dayNum}${isToday ? " · aujourd'hui" : ''}</span>
+          <span>${full} ${dayNum}${isToday ? " · aujourd'hui" : ''}${absence ? `<span class="planning-absence-badge">${absenceTypeLabel(absence.type)}</span>` : ''}</span>
           <span class="count">${pairs.length} chien${pairs.length > 1 ? 's' : ''}</span>
         </div>
         <div>${chipsHtml}</div>
@@ -3213,6 +3341,7 @@ function renderWeekView() {
 }
 
 function renderPlanning() {
+  renderAbsences();
   renderWeekView();
   renderTrialWalks();
 }
@@ -3220,6 +3349,385 @@ function renderPlanning() {
 document.getElementById('week-view-list').addEventListener('click', (ev) => {
   const chip = ev.target.closest('.planning-client-chip');
   if (chip) openClientDetail(chip.dataset.clientId);
+});
+
+// ============================================================
+// Absences (maladie / vacances) : marquage dans le planning, message
+// WhatsApp aux clients concernés, et compteur de "balades dues" — chaque
+// balade manquée donne droit à un crédit au prorata (prix de l'abonnement
+// ÷ nombre de balades du mois), déduit au prochain renouvellement.
+// ============================================================
+function isoOf(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function addDaysISO(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return isoOf(d);
+}
+function isWorkday(dateStr) {
+  return !!DOW_CODE_BY_JS_DAY[new Date(dateStr + 'T00:00:00').getDay()];
+}
+function frDateLong(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function frDateShort(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+function round2(n) { return Math.round(n * 100) / 100; }
+function joinNames(names) {
+  if (names.length <= 1) return names.join('');
+  return names.slice(0, -1).join(', ') + ' et ' + names[names.length - 1];
+}
+function firstNameOf(full) { return (full || '').trim().split(/\s+/)[0] || ''; }
+function datesInRange(start, end) {
+  const out = [];
+  let d = start;
+  while (d <= end && out.length < 400) { out.push(d); d = addDaysISO(d, 1); }
+  return out;
+}
+function absenceTypeLabel(type) { return type === 'vacances' ? '🌴 Vacances' : '🤒 Maladie'; }
+function absenceRangeLabel(a) {
+  return a.startDate === a.endDate ? frDateLong(a.startDate) : `du ${frDateLong(a.startDate)} au ${frDateLong(a.endDate)}`;
+}
+function absenceForDate(dateStr) {
+  return (settings.absences || []).find(a => a.startDate <= dateStr && dateStr <= a.endDate) || null;
+}
+
+// Nombre de "balades-chien" prévues ce jour-là pour un foyer (un chien = une
+// unité), en ne comptant pas les balades test ni avant le début d'abonnement.
+function walkUnitsOnDate(client, dateStr) {
+  const code = DOW_CODE_BY_JS_DAY[new Date(dateStr + 'T00:00:00').getDay()];
+  if (!code) return 0;
+  return (client.dogs || []).filter(dog =>
+    !dog.isTrial && (dog.walkDays || []).includes(code) && (!dog.subscriptionSince || dog.subscriptionSince <= dateStr)
+  ).length;
+}
+function walkUnitsInMonth(client, monthKey) {
+  const [y, m] = monthKey.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  let total = 0;
+  for (let day = 1; day <= lastDay; day++) {
+    total += walkUnitsOnDate(client, `${monthKey}-${String(day).padStart(2, '0')}`);
+  }
+  return total;
+}
+// Valeur d'une balade manquée : prix de l'abonnement × (balades de ce jour ÷ balades du mois).
+function walkValueOnDate(client, dateStr) {
+  const tarif = renewalTarifFor(client);
+  if (!tarif) return 0;
+  const price = tarifValue(tarif.code);
+  const total = walkUnitsInMonth(client, dateStr.slice(0, 7));
+  const units = walkUnitsOnDate(client, dateStr);
+  if (!price || !total || !units) return 0;
+  return round2(price * units / total);
+}
+
+// Clients touchés par une absence : balades d'abonnement perdues (avec leur
+// valeur de crédit) et balades test à reprogrammer.
+function absenceImpact(absence) {
+  const dates = datesInRange(absence.startDate, absence.endDate).filter(isWorkday);
+  const result = [];
+  clients.filter(c => !c.archived).forEach(client => {
+    const walks = [];
+    dates.forEach(d => {
+      const units = walkUnitsOnDate(client, d);
+      if (units > 0) walks.push({ date: d, units, value: walkValueOnDate(client, d) });
+    });
+    const trials = [];
+    (client.dogs || []).forEach(dog => {
+      if (dog.isTrial && dog.trialDate && dates.includes(dog.trialDate)) trials.push({ date: dog.trialDate, dogName: dog.name });
+    });
+    if (walks.length || trials.length) result.push({ client, walks, trials });
+  });
+  return result;
+}
+
+function owedWalks(client) {
+  const items = (client.missedWalks || []).filter(w => !w.credited);
+  return { items, count: items.length, total: round2(items.reduce((s, w) => s + (w.value || 0), 0)) };
+}
+
+async function saveAbsence(type, startDate, endDate) {
+  const absence = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    type, startDate, endDate, notified: {},
+  };
+  absenceImpact(absence).forEach(({ client, walks }) => {
+    client.missedWalks = client.missedWalks || [];
+    walks.forEach(w => {
+      if (client.missedWalks.some(m => m.date === w.date)) return;
+      client.missedWalks.push({ id: absence.id + '-' + w.date, absenceId: absence.id, date: w.date, value: w.value, credited: false });
+    });
+  });
+  settings.absences = settings.absences || [];
+  settings.absences.push(absence);
+  await saveClients();
+  await saveSettings();
+  return absence;
+}
+async function deleteAbsence(id) {
+  settings.absences = (settings.absences || []).filter(a => a.id !== id);
+  clients.forEach(c => {
+    if (c.missedWalks) c.missedWalks = c.missedWalks.filter(w => !(w.absenceId === id && !w.credited));
+  });
+  await saveClients();
+  await saveSettings();
+}
+
+function datesPhrase(dates) {
+  if (dates.length === 1) return `le ${frDateLong(dates[0])}`;
+  if (dates.length <= 3) return dates.map(d => `le ${frDateLong(d)}`).join(', ').replace(/, ([^,]*)$/, ' et $1');
+  return `du ${frDateLong(dates[0])} au ${frDateLong(dates[dates.length - 1])}`;
+}
+function nextWorkdayAfter(dateStr) {
+  let d = addDaysISO(dateStr, 1);
+  while (!isWorkday(d)) d = addDaysISO(d, 1);
+  return d;
+}
+function buildAbsenceMessage(absence, entry) {
+  const { client, walks, trials } = entry;
+  const first = firstNameOf(client.ownerName);
+  const hello = first ? `Bonjour ${first},` : 'Bonjour,';
+  const sigName = firstNameOf(settings.businessOwnerName);
+  const signature = sigName ? `${sigName} — Toutou Crew` : 'Toutou Crew';
+  const walkDates = walks.map(w => w.date);
+  const trialDates = trials.map(t => t.date);
+  const isVacances = absence.type === 'vacances';
+  const intro = isVacances ? `je serai en congés ${absence.startDate === absence.endDate ? 'le ' + frDateLong(absence.startDate) : 'du ' + frDateLong(absence.startDate) + ' au ' + frDateLong(absence.endDate)}` : 'je suis malade';
+  const sentences = [];
+  if (walks.length) {
+    const codes = new Set(walkDates.map(d => DOW_CODE_BY_JS_DAY[new Date(d + 'T00:00:00').getDay()]));
+    const names = joinNames((client.dogs || []).filter(d => !d.isTrial && (d.walkDays || []).some(c => codes.has(c))).map(d => d.name));
+    const plural = walks.length > 1;
+    sentences.push(isVacances
+      ? `${intro} : je n'assurerai donc pas les balades de ${names} sur cette période.`
+      : `${intro} et je ne pourrai malheureusement pas assurer ${plural ? 'les balades' : 'la balade'} de ${names} ${datesPhrase(walkDates)}.`);
+    sentences.push(`${plural ? 'Elles seront déduites' : 'Elle sera déduite'} au prorata de votre prochain abonnement.`);
+    if (isVacances) sentences.push(`Reprise des balades le ${frDateLong(nextWorkdayAfter(absence.endDate))}.`);
+    if (trials.length) {
+      sentences.push(`La balade test de ${joinNames(trials.map(t => t.dogName))} ${datesPhrase(trialDates)} est également annulée : dites-moi quand vous seriez disponible pour la reprogrammer.`);
+    }
+  } else {
+    sentences.push(`${intro} : la balade test de ${joinNames(trials.map(t => t.dogName))} ${datesPhrase(trialDates)} ne pourra donc pas avoir lieu. Dites-moi quand vous seriez disponible pour la reprogrammer.`);
+  }
+  return `${hello} ${sentences.join(' ')} Merci beaucoup pour votre compréhension !\n\n${signature}`;
+}
+
+// --- Liste des absences dans le Planning ---
+function renderAbsences() {
+  const box = document.getElementById('absence-list');
+  const today = todayISO();
+  const upcoming = (settings.absences || []).filter(a => a.endDate >= today).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  if (upcoming.length === 0) {
+    box.innerHTML = '<div class="note" style="margin-top:8px;">Aucune absence à venir.</div>';
+    return;
+  }
+  box.innerHTML = upcoming.map(a => {
+    const impact = absenceImpact(a);
+    const notified = impact.filter(i => a.notified && a.notified[i.client.id]).length;
+    const meta = impact.length === 0
+      ? 'Aucun client concerné'
+      : `${impact.length} client${impact.length > 1 ? 's' : ''} concerné${impact.length > 1 ? 's' : ''} · ${notified}/${impact.length} prévenu${impact.length > 1 ? 's' : ''}`;
+    return `
+      <div class="absence-row">
+        <div style="min-width:0;">
+          <div class="absence-row-title">${absenceTypeLabel(a.type)} — ${absenceRangeLabel(a)}</div>
+          <div class="absence-row-meta">${meta}</div>
+        </div>
+        <div class="absence-row-actions">
+          ${impact.length ? `<button type="button" class="absence-small-btn primary" data-abs-notify="${a.id}">Prévenir</button>` : ''}
+          <button type="button" class="absence-small-btn" data-abs-delete="${a.id}" aria-label="Supprimer l'absence">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+document.getElementById('absence-list').addEventListener('click', async (ev) => {
+  const notifyBtn = ev.target.closest('[data-abs-notify]');
+  if (notifyBtn) { openAbsenceModal('notify', notifyBtn.dataset.absNotify); return; }
+  const delBtn = ev.target.closest('[data-abs-delete]');
+  if (delBtn) {
+    if (!confirm("Supprimer cette absence ? Les balades dues qui lui sont liées (pas encore déduites) seront retirées.")) return;
+    await deleteAbsence(delBtn.dataset.absDelete);
+    render();
+  }
+});
+
+// --- Fenêtre : déclarer une absence puis prévenir les clients ---
+const absenceOverlay = document.getElementById('absence-overlay');
+const absenceModal = document.getElementById('absence-modal');
+const absStepForm = document.getElementById('absence-step-form');
+const absStepNotify = document.getElementById('absence-step-notify');
+let currentAbsenceId = null;
+let absenceFormType = 'maladie';
+
+function openAbsenceModal(step, absenceId) {
+  absenceOverlay.classList.add('open');
+  absenceModal.classList.add('open');
+  absenceModal.setAttribute('aria-hidden', 'false');
+  if (step === 'notify') {
+    showAbsenceNotifyStep(absenceId);
+    return;
+  }
+  absStepForm.style.display = 'block';
+  absStepNotify.style.display = 'none';
+  document.getElementById('abs-error').style.display = 'none';
+  setAbsenceFormType('maladie');
+  const tomorrow = addDaysISO(todayISO(), 1);
+  const start = isWorkday(tomorrow) ? tomorrow : nextWorkdayAfter(tomorrow);
+  document.getElementById('abs-start').value = start;
+  document.getElementById('abs-end').value = start;
+  updateAbsencePreview();
+}
+function closeAbsenceModal() {
+  absenceOverlay.classList.remove('open');
+  absenceModal.classList.remove('open');
+  absenceModal.setAttribute('aria-hidden', 'true');
+  currentAbsenceId = null;
+}
+function setAbsenceFormType(type) {
+  absenceFormType = type;
+  document.querySelectorAll('#abs-type-chips .day-chip').forEach(c => c.classList.toggle('active', c.dataset.type === type));
+  updateAbsencePreview();
+}
+function updateAbsencePreview() {
+  const start = document.getElementById('abs-start').value;
+  const end = document.getElementById('abs-end').value;
+  const hint = document.getElementById('abs-hint');
+  const preview = document.getElementById('abs-preview');
+  hint.textContent = start && start <= todayISO()
+    ? "⚠️ L'absence commence aujourd'hui ou avant : préviens les clients au plus vite."
+    : 'Idéalement, préviens les clients la veille au minimum.';
+  if (!start || !end || end < start) { preview.textContent = ''; return; }
+  const impact = absenceImpact({ type: absenceFormType, startDate: start, endDate: end });
+  const walkCount = impact.reduce((s, i) => s + i.walks.length, 0);
+  const credit = round2(impact.reduce((s, i) => s + i.walks.reduce((t, w) => t + w.value, 0), 0));
+  preview.textContent = impact.length === 0
+    ? 'Aucun client concerné sur cette période.'
+    : `${impact.length} client${impact.length > 1 ? 's' : ''} concerné${impact.length > 1 ? 's' : ''} · ${walkCount} balade${walkCount > 1 ? 's' : ''} à déduire au prorata (≈ ${fmt(credit)} au total).`;
+}
+
+function showAbsenceNotifyStep(absenceId) {
+  const absence = (settings.absences || []).find(a => a.id === absenceId);
+  if (!absence) { closeAbsenceModal(); return; }
+  currentAbsenceId = absenceId;
+  absStepForm.style.display = 'none';
+  absStepNotify.style.display = 'block';
+  const impact = absenceImpact(absence);
+  document.getElementById('abs-notify-title').textContent = `${absenceTypeLabel(absence.type)} — prévenir les clients`;
+  const withoutPhone = impact.filter(i => !formatPhoneForWhatsApp(i.client.phonePrimary || i.client.conjointPhone)).length;
+  document.getElementById('abs-notify-intro').textContent = impact.length === 0
+    ? 'Aucun client concerné sur cette période.'
+    : `${absenceRangeLabel(absence)}. Le message est déjà rédigé : WhatsApp l'ouvre pré-rempli, il te reste à l'envoyer.${withoutPhone ? ` ${withoutPhone} client${withoutPhone > 1 ? 's n\'ont' : ' n\'a'} pas de numéro (ajoute-le sur la fiche, ou utilise "Copier").` : ''}`;
+  document.getElementById('abs-notify-list').innerHTML = impact.map(({ client, walks, trials }) => {
+    const phone = formatPhoneForWhatsApp(client.phonePrimary || client.conjointPhone);
+    const sent = !!(absence.notified && absence.notified[client.id]);
+    const credit = round2(walks.reduce((s, w) => s + w.value, 0));
+    const lines = [];
+    if (walks.length) lines.push(`${walks.length} balade${walks.length > 1 ? 's' : ''} : ${walks.map(w => frDateShort(w.date)).join(', ')} · crédit ≈ ${fmt(credit)}`);
+    if (trials.length) lines.push(`balade test à reprogrammer : ${trials.map(t => frDateShort(t.date)).join(', ')}`);
+    return `
+      <div class="abs-notify-row">
+        <div class="abs-notify-info">
+          <div class="client-summary-name">${escapeHtml(clientLabel(client))}</div>
+          <div class="client-summary-status" style="text-transform:none;">${escapeHtml(lines.join(' — '))}</div>
+        </div>
+        <div class="absence-row-actions">
+          <button type="button" class="absence-small-btn primary" data-abs-wa="${client.id}" ${phone ? '' : 'disabled'}>${sent ? '✓ Prévenu' : 'WhatsApp'}</button>
+          <button type="button" class="absence-small-btn" data-abs-copy="${client.id}">Copier</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+document.getElementById('abs-notify-list').addEventListener('click', async (ev) => {
+  const absence = (settings.absences || []).find(a => a.id === currentAbsenceId);
+  if (!absence) return;
+  const waBtn = ev.target.closest('[data-abs-wa]');
+  const copyBtn = ev.target.closest('[data-abs-copy]');
+  const clientId = waBtn ? waBtn.dataset.absWa : copyBtn ? copyBtn.dataset.absCopy : null;
+  if (!clientId) return;
+  const entry = absenceImpact(absence).find(i => i.client.id === clientId);
+  if (!entry) return;
+  const message = buildAbsenceMessage(absence, entry);
+  if (waBtn) {
+    const phone = formatPhoneForWhatsApp(entry.client.phonePrimary || entry.client.conjointPhone);
+    if (!phone) return;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+    absence.notified = absence.notified || {};
+    absence.notified[clientId] = true;
+    await saveSettings();
+    showAbsenceNotifyStep(absence.id);
+    renderAbsences();
+  } else {
+    try { await navigator.clipboard.writeText(message); copyBtn.textContent = 'Copié ✓'; }
+    catch { window.prompt('Copie le message :', message); }
+  }
+});
+
+document.getElementById('open-absence-modal').addEventListener('click', () => openAbsenceModal('form'));
+document.getElementById('abs-cancel').addEventListener('click', closeAbsenceModal);
+document.getElementById('abs-notify-done').addEventListener('click', closeAbsenceModal);
+absenceOverlay.addEventListener('click', closeAbsenceModal);
+document.querySelectorAll('#abs-type-chips .day-chip').forEach(chip => {
+  chip.addEventListener('click', () => setAbsenceFormType(chip.dataset.type));
+});
+document.getElementById('abs-start').addEventListener('change', () => {
+  const start = document.getElementById('abs-start').value;
+  const endInput = document.getElementById('abs-end');
+  if (start && (!endInput.value || endInput.value < start)) endInput.value = start;
+  updateAbsencePreview();
+});
+document.getElementById('abs-end').addEventListener('change', updateAbsencePreview);
+document.getElementById('abs-save').addEventListener('click', async () => {
+  const errorBox = document.getElementById('abs-error');
+  const start = document.getElementById('abs-start').value;
+  const end = document.getElementById('abs-end').value;
+  errorBox.style.display = 'none';
+  if (!start || !end) { errorBox.textContent = 'Renseigne les dates de début et de fin.'; errorBox.style.display = 'block'; return; }
+  if (end < start) { errorBox.textContent = 'La date de fin doit être après la date de début.'; errorBox.style.display = 'block'; return; }
+  const btn = document.getElementById('abs-save');
+  btn.disabled = true;
+  try {
+    const absence = await saveAbsence(absenceFormType, start, end);
+    render();
+    showAbsenceNotifyStep(absence.id);
+  } catch (err) {
+    console.error('Échec de l\'enregistrement de l\'absence', err);
+    errorBox.textContent = "Impossible d'enregistrer l'absence : " + (err && err.message ? err.message : String(err));
+    errorBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// --- Compteur "balades dues" dans la fiche client ---
+function renderMissedWalksBlock() {
+  const box = document.getElementById('cd-missed-walks');
+  const client = clientDetailId ? getClientById(clientDetailId) : null;
+  const owed = client ? owedWalks(client) : { count: 0, total: 0, items: [] };
+  if (!owed.count) { box.innerHTML = ''; return; }
+  const dates = owed.items.map(w => frDateShort(w.date)).join(', ');
+  box.innerHTML = `
+    <div class="mini-card" style="margin-bottom:14px;">
+      <div class="lbl">Balades dues (absences)</div>
+      <div class="val" style="color:#e6743f;">${owed.count} balade${owed.count > 1 ? 's' : ''} · crédit ${fmt(owed.total)}</div>
+      <div class="note" style="margin-top:6px;">${escapeHtml(dates)}</div>
+      <div class="note">Ce crédit est proposé automatiquement au prochain renouvellement (clôture du mois), tu peux l'ajuster à ce moment-là.</div>
+      <button type="button" class="absence-small-btn" id="cd-clear-missed" style="margin-top:8px;">Effacer le compteur</button>
+    </div>
+  `;
+}
+document.getElementById('cd-missed-walks').addEventListener('click', async (ev) => {
+  if (!ev.target.closest('#cd-clear-missed')) return;
+  const client = clientDetailId ? getClientById(clientDetailId) : null;
+  if (!client) return;
+  if (!confirm('Effacer les balades dues de ce client sans crédit ? (Aucune déduction ne sera appliquée.)')) return;
+  client.missedWalks = (client.missedWalks || []).filter(w => w.credited);
+  await saveClients();
+  renderMissedWalksBlock();
+  render();
 });
 
 function renderTrialWalks() {
@@ -3910,7 +4418,7 @@ function renderEntriesList(monthKey) {
           <span class="amount">${fmt(e.amount)}</span>
         </div>
         <div class="entry-row-bottom">
-          <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}${isPaid && e.paymentMethod ? ' · ' + paymentMethodLabel(e.paymentMethod) : ''}</span>
+          <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}${e.creditNote ? ' — ' + escapeHtml(e.creditNote) : ''}${isPaid && e.paymentMethod ? ' · ' + paymentMethodLabel(e.paymentMethod) : ''}</span>
           <div class="row-actions">
             <button class="invoice-btn" data-id="${e.id}" title="Générer la facture">🧾</button>
             <button class="paid-toggle ${isPaid ? 'paid' : 'pending'}" data-id="${e.id}">${isPaid ? '✅ Reçu' : '⏳ En attente'}</button>
@@ -4004,7 +4512,7 @@ function renderHistory() {
               <span class="amount">${fmt(e.amount)}</span>
             </div>
             <div class="entry-row-bottom">
-              <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}${isPaid && e.paymentMethod ? ' · ' + paymentMethodLabel(e.paymentMethod) : ''}</span>
+              <span class="meta">${e.formuleLabel ? escapeHtml(e.formuleLabel) : ''}${e.note ? ' — ' + escapeHtml(e.note) : ''}${e.creditNote ? ' — ' + escapeHtml(e.creditNote) : ''}${isPaid && e.paymentMethod ? ' · ' + paymentMethodLabel(e.paymentMethod) : ''}</span>
               <div class="row-actions">
                 <button class="invoice-btn" data-id="${e.id}" title="Générer la facture">🧾</button>
                 <button class="paid-toggle ${isPaid ? 'paid' : 'pending'}" data-id="${e.id}">${isPaid ? '✅ Reçu' : '⏳ En attente'}</button>
@@ -4407,7 +4915,9 @@ function updateRenewalRowAmount(clientId) {
   const formuleType = row.querySelector('.renewal-formule-select').value;
   const freq = renewalRowRequiredFreq(row);
   const price = tarifValue(`${formuleType}-${freq}`);
-  row.querySelector('.renewal-amount').textContent = fmt(price);
+  const creditInput = row.querySelector('.renewal-credit-input');
+  const credit = creditInput ? Math.max(0, parseFloat(creditInput.value) || 0) : 0;
+  row.querySelector('.renewal-amount').textContent = fmt(Math.max(0, round2(price - credit)));
   updateRenewalSummary();
 }
 
@@ -4427,6 +4937,12 @@ function populateRenewalList() {
     const freq = tarif ? tarif.n : 1;
     const price = tarif ? tarifValue(tarif.code) : tarifValue(`${formuleType}-${freq}`);
     const canOfferDeux = c.dogs.length < 2 || formuleType === 'deux';
+    const owed = owedWalks(c);
+    const creditHtml = owed.count ? `
+        <div class="renewal-credit-line">
+          <span>Crédit · ${owed.count} balade${owed.count > 1 ? 's' : ''} manquée${owed.count > 1 ? 's' : ''}</span>
+          <span>− <input type="number" class="renewal-credit-input" value="${owed.total.toFixed(2)}" min="0" step="0.01"> €</span>
+        </div>` : '';
     return `
       <div class="renewal-row-detailed" data-id="${c.id}">
         <div class="renewal-row-top">
@@ -4434,9 +4950,10 @@ function populateRenewalList() {
             <input type="checkbox" class="renewal-check" checked>
             <span class="renewal-name">${escapeHtml(clientLabel(c))}</span>
           </label>
-          <span class="renewal-amount">${fmt(price)}</span>
+          <span class="renewal-amount">${fmt(Math.max(0, round2(price - owed.total)))}</span>
           <button type="button" class="renewal-expand-toggle" aria-label="Détails">▾</button>
         </div>
+        ${creditHtml}
         <div class="renewal-edit-fields" style="display:none;">
           <select class="renewal-formule-select">
             <option value="seul" ${formuleType === 'seul' ? 'selected' : ''}>Abonnement 1 chien</option>
@@ -4462,6 +4979,8 @@ function populateRenewalList() {
 
     const row = container.querySelector(`.renewal-row-detailed[data-id="${c.id}"]`);
     row.querySelector('.renewal-check').addEventListener('change', updateRenewalSummary);
+    const creditInput = row.querySelector('.renewal-credit-input');
+    if (creditInput) creditInput.addEventListener('input', () => updateRenewalRowAmount(c.id));
     row.querySelector('.renewal-formule-select').addEventListener('change', () => rerenderRenewalDays(c));
     row.querySelector('.renewal-freq-select').addEventListener('change', () => rerenderRenewalDays(c));
     row.querySelector('.renewal-expand-toggle').addEventListener('click', () => {
@@ -4585,15 +5104,24 @@ document.getElementById('confirm-renewal').addEventListener('click', async () =>
         client.subscriptionType = 'seul';
       }
 
-      entries.push({
+      const creditInput = row.querySelector('.renewal-credit-input');
+      const credit = creditInput ? Math.max(0, parseFloat(creditInput.value) || 0) : 0;
+      const owedNow = owedWalks(client);
+      const renewalEntry = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
         date: upcomingDate,
-        amount: price,
+        amount: Math.max(0, round2(price - credit)),
         note: '',
         formuleLabel: tarifNoteLabel(code) + ' (renouvellement)',
         clientId,
         paid: false
-      });
+      };
+      if (credit > 0 && owedNow.count > 0) {
+        const s = owedNow.count > 1 ? 's' : '';
+        renewalEntry.creditNote = `Crédit : ${owedNow.count} balade${s} manquée${s} (-${fmt(credit)})`;
+        owedNow.items.forEach(w => { w.credited = true; w.creditedOn = upcomingDate; });
+      }
+      entries.push(renewalEntry);
     }
     await saveClients();
     await saveEntries();
@@ -5217,7 +5745,7 @@ async function buildInvoicePdfBlob(client, meta) {
   y += 5;
   doc.setFontSize(8);
   doc.setTextColor(138, 131, 114);
-  doc.text(`Prestation du ${meta.datePrestation}`, 15, y);
+  doc.text(pdfSafeText(`Prestation du ${meta.datePrestation}${meta.creditNote ? ' — ' + meta.creditNote : ''}`), 15, y);
   doc.setTextColor(0, 0, 0);
 
   // Total, aligné à droite.
@@ -5254,6 +5782,7 @@ async function ensureInvoiceMeta(entry) {
     dateEmission: new Date(entry.invoiceDate + 'T00:00:00').toLocaleDateString('fr-FR'),
     datePrestation: new Date(entry.date + 'T00:00:00').toLocaleDateString('fr-FR'),
     designation: entry.formuleLabel || entry.note || 'Prestation de promenade / éducation canine',
+    creditNote: entry.creditNote || '',
     totalLabel: 'Total',
   };
 }
@@ -5295,7 +5824,7 @@ async function openInvoice(entryId) {
   const client = entry.clientId ? getClientById(entry.clientId) : null;
   const clientCityLine = client ? [client.postalCode, client.city].filter(Boolean).join(' ') : '';
   const meta = await ensureInvoiceMeta(entry);
-  const { numLabel, dateEmission, datePrestation, designation, totalLabel } = meta;
+  const { numLabel, dateEmission, datePrestation, designation, totalLabel, creditNote } = meta;
 
   const businessCityLine = [settings.businessPostalCode, settings.businessCity].filter(Boolean).join(' ');
 
@@ -5332,7 +5861,7 @@ async function openInvoice(entryId) {
       <thead><tr><th>Désignation</th><th style="text-align:right;">Qté</th><th style="text-align:right;">Prix</th><th style="text-align:right;">Montant</th></tr></thead>
       <tbody>
         <tr>
-          <td>${escapeHtml(designation)}<br><span style="color:#8a8372; font-size:0.78rem;">Prestation du ${datePrestation}</span></td>
+          <td>${escapeHtml(designation)}<br><span style="color:#8a8372; font-size:0.78rem;">Prestation du ${datePrestation}${creditNote ? ' — ' + escapeHtml(creditNote) : ''}</span></td>
           <td style="text-align:right;">1</td>
           <td style="text-align:right;">${fmt(entry.amount)}</td>
           <td style="text-align:right;">${fmt(entry.amount)}</td>
