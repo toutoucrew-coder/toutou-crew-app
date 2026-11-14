@@ -732,7 +732,10 @@
   .photos-pending-row { margin-top: 8px; font-size: 0.8rem; }
   .photos-pending-row.ok { color: var(--positive); font-weight: 600; }
   .photos-pending-row .dim { color: var(--text-dim); font-weight: 400; }
-  .photos-pending-row select { width: 100%; margin-top: 4px; }
+  .photos-pending-sel { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+  .photos-pending-sel select { flex: 1; min-width: 0; }
+  .photos-x { flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text-dim); font-size: 0.9rem; cursor: pointer; padding: 0; }
+  .photos-x:hover { color: var(--warning); border-color: var(--warning); background: var(--surface-2); }
   .photos-pending-info .fn { word-break: break-all; margin-bottom: 4px; }
 
   .absence-card {
@@ -1716,6 +1719,7 @@
           <input type="range" id="photos-thr" min="20" max="95" value="55"></label>
         <label>Écart minimal avec le 2e chien : <strong id="photos-mar-val">5</strong> points
           <input type="range" id="photos-mar" min="0" max="30" value="5"></label>
+        <label style="margin-top:10px;"><input type="checkbox" id="photos-force"> Tout réanalyser (ignorer la mémoire des photos déjà analysées)</label>
       </details>
       <div class="photos-status" id="photos-walk-status"></div>
     </div>
@@ -6595,18 +6599,61 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     return t.toDataURL('image/jpeg', 0.72);
   }
 
+  // ---------- mémoire des analyses (ce navigateur), par date et nom de fichier ----------
+  // On ne réanalyse pas une photo déjà vue (même nom, même taille) : seules les nouvelles sont calculées.
+  const CACHE_KEY = 'tc-photo-cache-v1';
+  const loadCache = () => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch (e) { return {}; } };
+  let cacheTimer = null;
+  function persistCache() {
+    const date = state.photosDate;
+    if (!date || !state.photos.length) return;
+    try {
+      const c = loadCache();
+      const day = c[date] || {};
+      state.photos.forEach(p => {
+        if (p.error || !p.sig) return;
+        day[p.name] = { z: p.file.size, g: p.sig, i: p.items.map(it => ({
+          b: [it.box.xmin, it.box.ymin, it.box.xmax, it.box.ymax].map(v => Math.round(v || 0)),
+          f: it.fallback ? 1 : 0,
+          s: it.scores.slice(0, 5).map(x => [x.key, Math.round(x.score * 1000) / 1000]),
+          m: it.manual ? 1 : 0, c: it.manual ? it.choice : null,
+        })) };
+      });
+      c[date] = day;
+      Object.keys(c).sort().slice(0, -30).forEach(k => delete c[k]); // on garde 30 jours
+      localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+    } catch (e) { /* stockage plein ou indisponible : on réanalysera */ }
+  }
+  const schedulePersistCache = () => { clearTimeout(cacheTimer); cacheTimer = setTimeout(persistCache, 600); };
+
   async function analyse() {
     const st = $('photos-walk-status'), btn = $('photos-walk-run');
     if (shownDogs().some(needsEmbed)) { btn.disabled = true; await computeMissing(); }
     const refs = activeDogs().map(({ dog, key }) => ({ key, vecs: dogEmbedInfo(dog).items.map(i => unpackVec(i.v)) })).filter(r => r.vecs.length);
     if (!refs.length) { st.innerHTML = '<span class="bad">Aucune empreinte de chien : calcule-les d\'abord (étape 1).</span>'; return; }
     btn.disabled = true; state.photos = []; state.msgs = {}; state.analysing = true; state.photosDate = logDate(); renderResults();
+    const sig = hashStr(refs.map(r => r.key).sort().join(','));
+    const force = $('photos-force').checked;
+    const cacheDay = force ? {} : (loadCache()[state.photosDate] || {});
+    let reused = 0, fresh = 0;
     try {
-      await loadModels(st);
       let i = 0;
       for (const f of state.files) {
         st.textContent = `Analyse : ${++i}/${state.files.length} — ${f.name}`;
-        const photo = { id: 'p' + i, file: f, name: f.name, items: [], thumb: null, error: null };
+        const photo = { id: 'p' + i, file: f, name: f.name, items: [], thumb: null, error: null, sig };
+        const cached = cacheDay[f.name];
+        if (cached && cached.z === f.size && cached.g === sig) { // déjà analysée : on reprend le résultat mémorisé
+          try {
+            photo.items = cached.i.map(x => ({ box: { xmin: x.b[0], ymin: x.b[1], xmax: x.b[2], ymax: x.b[3] }, fallback: !!x.f, scores: x.s.map(([key, score]) => ({ key, score })), choice: x.m ? x.c : null, manual: !!x.m }));
+            photo.thumb = makeThumb(await fileToCanvas(f), photo.items);
+            reused++;
+            state.photos.push(photo);
+            applyAuto(); renderResults();
+            await new Promise(r => setTimeout(r));
+            continue;
+          } catch (err) { photo.items = []; /* mémoire inutilisable : on réanalyse */ }
+        }
+        if (!embedder || !detector) await loadModels(st); // modèles chargés seulement s'il y a du nouveau
         try {
           const canvas = await fileToCanvas(f);
           const dets = await detectDogs(canvas);
@@ -6617,16 +6664,18 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
             photo.items.push({ box: d.box, fallback: d.fallback, scores, choice: null, manual: false });
           }
           photo.thumb = makeThumb(canvas, photo.items);
+          fresh++;
         } catch (err) { photo.error = errText(err); console.error(f.name, err); }
         state.photos.push(photo);
         applyAuto();
+        persistCache();
         renderResults();
         await new Promise(r => setTimeout(r));
       }
       state.analysing = false;
       applyAuto(); renderResults();
       const ok = state.photos.filter(p => !p.error).length;
-      st.innerHTML = `✓ ${ok} photo(s) analysée(s)` + (ok < state.photos.length ? ` · <span class="bad">${state.photos.length - ok} illisible(s)</span>` : '') + '.';
+      st.innerHTML = `✓ ${ok} photo(s)` + (reused ? ` : ${fresh} nouvelle${fresh > 1 ? 's' : ''} analysée${fresh > 1 ? 's' : ''}, ${reused} déjà connue${reused > 1 ? 's' : ''}` : ' analysée(s)') + (ok < state.photos.length ? ` · <span class="bad">${state.photos.length - ok} illisible(s)</span>` : '') + '.';
     } catch (err) { st.innerHTML = `<span class="bad">Erreur : ${esc(errText(err))}</span>`; console.error(err); }
     state.analysing = false;
     btn.disabled = false;
@@ -6762,6 +6811,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (!state.photos.length) { box.innerHTML = renderLogCard(new Set()); return; }
     const groups = buildGroups();
     syncLog(groups);
+    if (!state.analysing) schedulePersistCache();
     const pendingPhotos = state.photos.filter(p => !p.error && p.items.some(it => !it.choice));
     const errors = state.photos.filter(p => p.error);
     const allKeys = activeDogs().filter(x => dogEmbedInfo(x.dog).usable).map(x => x.key);
@@ -6776,7 +6826,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (groups.length) html += `<div class="photos-actions" style="margin:-4px 0 12px;"><button type="button" class="photos-btn ghost" data-act="exportall" title="Crée un dossier par client avec les photos à joindre">📁 Préparer tous les dossiers d'envoi</button></div>`;
 
     if (pendingPhotos.length) {
-      html += `<div class="photos-group pending"><div class="photos-group-head"><div class="photos-group-title">⚠️ À vérifier</div><div class="photos-group-count">Choisis le bon chien, ou « Ignorer »</div></div>`;
+      html += `<div class="photos-group pending"><div class="photos-group-head"><div class="photos-group-title">⚠️ À vérifier</div><div class="photos-group-count">Choisis le bon chien, ou clique sur ✕ pour ignorer</div></div>`;
       pendingPhotos.forEach(p => {
         const multi = p.items.filter(it => !it.dup).length > 1;
         const taken = new Set(p.items.filter(it => it.choice && it.choice !== 'skip').map(it => it.choice));
@@ -6790,13 +6840,12 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
           const top3 = [...rk.pres, ...rk.abs].slice(0, 3);
           const rest = allKeys.filter(k => !taken.has(k) && !top3.some(t => t.key === k));
           rows += `<div class="photos-pending-row"><div>${label ? `<strong>${label}</strong> — ` : ''}<span class="dim">${it.fallback ? 'chien non détecté (photo entière analysée)' : 'reconnaissance incertaine'}</span></div>
-            <select data-p="${p.id}" data-i="${ii}">
+            <div class="photos-pending-sel"><select data-p="${p.id}" data-i="${ii}">
               <option value="">Choisir…</option>
               ${top3.map(t => `<option value="${esc(t.key)}">${esc(candidateLabel(t.key))} — ${Math.round(t.score * 100)} %</option>`).join('')}
               ${rest.length ? `<option disabled>──────────</option>${rest.map(k => `<option value="${esc(k)}">${esc(candidateLabel(k))}</option>`).join('')}` : ''}
-              <option disabled>──────────</option>
-              <option value="skip">Ignorer ${multi ? 'ce chien' : 'cette photo'}</option>
-            </select></div>`;
+            </select>
+            <button type="button" class="photos-x" data-act="skip" data-p="${p.id}" data-i="${ii}" title="Ignorer ${multi ? 'ce chien' : 'cette photo'}" aria-label="Ignorer">✕</button></div></div>`;
         });
         html += `<div class="photos-pending-item">
           <img src="${p.thumb}" alt="">
@@ -6921,6 +6970,10 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       const le = p && peekLog(resultsDate(), btn.dataset.c);
       if (le && !le.sent.includes(p.name)) { le.files = le.files.filter(f => f !== p.name); persistLog(); }
       renderResults();
+    } else if (act === 'skip') {
+      const p = state.photos.find(x => x.id === btn.dataset.p);
+      if (p) { const it = p.items[+btn.dataset.i]; it.choice = 'skip'; it.manual = true; }
+      renderResults();
     } else if (act === 'change') {
       const p = state.photos.find(x => x.id === btn.dataset.p);
       if (p) { const it = p.items[+btn.dataset.i]; it.choice = null; it.manual = true; }
@@ -7012,7 +7065,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (!$('photos-date').value) { $('photos-date').value = todayISO(); resetPresence(); } else renderDogs();
     renderResults();
   });
-  window.__photos = { state, packVec, unpackVec, VARIANTS, buildMessage, renderDogs, renderResults };
+  window.__photos = { state, packVec, unpackVec, VARIANTS, buildMessage, renderDogs, renderResults, hashStr, persistCache, analyse };
 })();
 </script>
 </body>
