@@ -6177,7 +6177,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const esc = (t) => escapeHtml(String(t == null ? '' : t));
 
   let tf = null, detector = null, embedder = null;
-  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set(), extra: new Set(), addOpen: false, exportDir: null, exported: {}, exportMsg: '', bothStep: {}, groupEdit: {}, groupNote: {} };
+  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set(), extra: new Set(), addOpen: false, exportDir: null, exported: {}, exportMsg: '', bothStep: {}, groupEdit: {}, groupNote: {}, noExport: {} };
 
   // ---------- fichiers / images ----------
   const isImage = (f) => IMG_EXT.includes(f.name.split('.').pop().toLowerCase()) && !f.name.startsWith('.');
@@ -6839,7 +6839,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
             : rcpt.k === 'both' ? `${step + 1}/2 · WhatsApp ${esc(dePhrase([step === 0 ? ownerFirstName(g.client) : conjFirstName(g.client)]))}`
             : rcpt.k === 'group' ? 'Copier le message et ouvrir le groupe'
             : (allSent ? 'Renvoyer sur WhatsApp' : 'Ouvrir WhatsApp')}</button>
-          ${!allSent ? `<button type="button" class="photos-btn ghost" data-act="export" data-c="${esc(g.client.id)}" title="Copie les photos à envoyer dans un dossier de ton ordinateur">📁 Préparer le dossier</button>` : ''}
+          <button type="button" class="photos-btn ghost" data-act="export" data-c="${esc(g.client.id)}" title="Copie les photos à envoyer dans un dossier de ton ordinateur">📁 Préparer le dossier${allSent ? ' (renvoi)' : ''}</button>
           ${!allSent ? `<button type="button" class="photos-btn ghost" data-act="marksent" data-c="${esc(g.client.id)}" title="À utiliser si tu les as déjà envoyées toi-même">Marquer comme envoyées</button>` : ''}
           <button type="button" class="photos-btn ghost" data-act="reroll" data-c="${esc(g.client.id)}">🎲 Autre message</button>
         </div>
@@ -6860,8 +6860,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const safeName = (t) => String(t).replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'client';
   async function exportGroup(g) {
     const sentNames = sentSet(resultsDate(), g.client.id);
-    const todo = g.photos.filter(p => !sentNames.has(p.name));
-    if (!todo.length) { state.exportMsg = 'Toutes les photos de ce client ont déjà été envoyées.'; return; }
+    const unsent = g.photos.filter(p => !sentNames.has(p.name));
+    const todo = unsent.length ? unsent : g.photos; // tout déjà marqué envoyé : on prépare tout (renvoi)
     if (!state.exportDir) state.exportDir = await window.showDirectoryPicker({ id: 'toutou-photos-envoi', mode: 'readwrite', startIn: 'pictures' });
     const dayDir = await state.exportDir.getDirectoryHandle(resultsDate(), { create: true });
     const folder = safeName(`${g.dogNames.join(' & ')} - ${g.client.ownerName}`);
@@ -6947,18 +6947,31 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       const rcpt = currentRecipient(g.client);
       if (!rcpt) return;
       const names = g.photos.map(p => p.name), cid = g.client.id;
+      // Les photos à joindre sont préparées avant d'ouvrir WhatsApp (si ce n'est pas déjà fait)
+      let exportedNow = false;
+      if (!state.exported[cid] && !state.noExport[cid] && window.showDirectoryPicker && !(rcpt.k === 'both' && state.bothStep[cid])) {
+        try { await exportGroup(g); exportedNow = true; }
+        catch (err) { if (err && err.name === 'AbortError') state.noExport[cid] = true; else { state.exportMsg = 'Dossier non préparé : ' + errText(err); console.error(err); } }
+      }
       const open = (phone, kind) => window.open(`https://wa.me/${phone}?text=${encodeURIComponent(textFor(g, kind))}`, '_blank');
-      if (rcpt.k === 'principal' || rcpt.k === 'conjoint') { open(rcpt.phone, rcpt.k); markSent(cid, names); }
-      else if (rcpt.k === 'both') {
+      const blocked = () => { // l'attente du dossier a pu faire bloquer l'ouverture de l'onglet
+        state.exportMsg = 'Dossier prêt ✓ — clique à nouveau sur le bouton pour ouvrir WhatsApp.';
+        renderResults();
+      };
+      if (rcpt.k === 'principal' || rcpt.k === 'conjoint') {
+        if (!open(rcpt.phone, rcpt.k)) return blocked();
+        markSent(cid, names);
+      } else if (rcpt.k === 'both') {
         const opts = recipientOptions(g.client);
-        if (!state.bothStep[cid]) { open(opts.find(o => o.k === 'principal').phone, 'principal'); state.bothStep[cid] = 1; }
-        else { open(opts.find(o => o.k === 'conjoint').phone, 'conjoint'); state.bothStep[cid] = 0; markSent(cid, names); }
+        if (!state.bothStep[cid]) { if (!open(opts.find(o => o.k === 'principal').phone, 'principal')) return blocked(); state.bothStep[cid] = 1; }
+        else { if (!open(opts.find(o => o.k === 'conjoint').phone, 'conjoint')) return blocked(); state.bothStep[cid] = 0; markSent(cid, names); }
       } else if (rcpt.k === 'group') {
         try { await navigator.clipboard.writeText(textFor(g, 'group')); state.groupNote[cid] = 'Message copié : colle-le dans le groupe (Cmd + V).'; }
         catch (e) { state.groupNote[cid] = 'Copie impossible : copie le message ci-dessous à la main.'; }
-        window.open(g.client.waGroupLink, '_blank');
+        if (!window.open(g.client.waGroupLink, '_blank')) return blocked();
         markSent(cid, names);
       }
+      if (exportedNow) state.exportMsg = '';
       renderResults();
     } else if (act === 'rcpt') {
       const c = getClientById(btn.dataset.c);
@@ -6980,7 +6993,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       renderResults();
     } else if (act === 'export') {
       const g = buildGroups().find(x => x.client.id === btn.dataset.c);
-      if (g) await exportGroups([g]);
+      if (g) { state.noExport[g.client.id] = false; await exportGroups([g]); }
     } else if (act === 'exportall') {
       await exportGroups(buildGroups());
     } else if (act === 'marksent') {
