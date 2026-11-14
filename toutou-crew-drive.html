@@ -6737,7 +6737,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     const p = formatPhoneForWhatsApp(c.phonePrimary), q = formatPhoneForWhatsApp(c.conjointPhone), o = [];
     if (p) o.push({ k: 'principal', label: ownerFirstName(c) || 'Principal', phone: p });
     if (q) o.push({ k: 'conjoint', label: conjFirstName(c), phone: q });
-    if (p && q) o.push({ k: 'both', label: 'Les deux (2 conversations)' });
+    if (p && q) o.push({ k: 'both', label: 'Les deux séparément' });
     if (c.waGroupLink) o.push({ k: 'group', label: 'Groupe WhatsApp' });
     return o;
   }
@@ -6886,9 +6886,12 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         ${state.exported[g.client.id] ? `<div class="photos-files" style="color:var(--positive);">📁 Dossier prêt : ${esc(state.exported[g.client.id])}<br><span style="color:var(--text-dim);">Dans la conversation WhatsApp : 📎 → Photos et vidéos → ouvre ce dossier → Cmd + A → Ouvrir.</span></div>` : ''}
         ${(rcptOpts.length > 1 || g.client.conjointPhone || g.client.waGroupLink || state.groupEdit[g.client.id]) ? `<div class="photos-rcpt"><span class="dim">Envoyer à :</span>
           <div class="photos-chips">${rcptOpts.map(o => `<span class="photos-chip${rcpt && rcpt.k === o.k ? ' on' : ''}" data-act="rcpt" data-c="${esc(g.client.id)}" data-k="${o.k}">${esc(o.label)}</span>`).join('')}
-          ${!g.client.waGroupLink ? `<span class="photos-chip" data-act="addgroup" data-c="${esc(g.client.id)}">+ Groupe WhatsApp</span>` : `<span class="photos-chip" data-act="rmgroup" data-c="${esc(g.client.id)}" title="Retirer le lien du groupe">✕ groupe</span>`}</div>
+          ${!g.client.waGroupLink ? `<span class="photos-chip" data-act="addgroup" data-c="${esc(g.client.id)}">+ Groupe (une seule conversation)</span>` : `<span class="photos-chip" data-act="rmgroup" data-c="${esc(g.client.id)}" title="Retirer le lien du groupe">✕ groupe</span>`}</div>
           ${state.groupEdit[g.client.id] ? `<div class="photos-row"><input type="text" class="photos-group-input" data-c="${esc(g.client.id)}" placeholder="Lien du groupe : https://chat.whatsapp.com/…" style="flex:1;min-width:200px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:0.8rem;"><button type="button" class="photos-btn small" data-act="savegroup" data-c="${esc(g.client.id)}">Enregistrer</button></div>
-            <div class="photos-note" style="margin:4px 0 0;">Dans WhatsApp : ouvre le groupe → Infos du groupe → Inviter via un lien → Copier le lien. Le message ne peut pas être prérempli dans un groupe : l'appli le copie pour que tu le colles.</div>` : ''}
+            <div class="photos-note" style="margin:6px 0 0;"><strong>Pour une seule conversation avec les deux</strong> (à faire une seule fois par client) :<br>
+              1. Dans WhatsApp : Nouveau groupe → ajoute ${esc(ownerFirstName(g.client))}${g.client.conjointPhone ? ' et ' + esc(conjFirstName(g.client)) : ''} → nom suggéré : <strong>${esc(g.dogNames.join(' & '))} · Toutou Crew</strong> <button type="button" class="photos-btn ghost small" data-act="copygroupname" data-c="${esc(g.client.id)}">Copier ce nom</button><br>
+              2. Ouvre le groupe → Infos du groupe → Inviter via un lien → Copier le lien.<br>
+              3. Colle le lien ici et enregistre. Ensuite, l'appli ouvrira ce groupe à chaque envoi (le message ne peut pas être prérempli dans un groupe : il est copié, tu le colles avec Cmd + V).</div>` : ''}
           ${state.groupNote[g.client.id] ? `<div class="photos-note" style="margin:4px 0 0;color:var(--positive);">${esc(state.groupNote[g.client.id])}</div>` : ''}</div>` : ''}
         <textarea class="photos-msg" data-c="${esc(g.client.id)}">${esc(m.text)}</textarea>
         <div class="photos-actions">
@@ -7065,6 +7068,9 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       const c = getClientById(btn.dataset.c);
       if (c) { c.photoRecipient = btn.dataset.k; state.bothStep[c.id] = 0; state.groupNote[c.id] = ''; await saveClients(); }
       renderResults();
+    } else if (act === 'copygroupname') {
+      const g = buildGroups().find(x => x.client.id === btn.dataset.c);
+      if (g) { try { await navigator.clipboard.writeText(`${g.dogNames.join(' & ')} · Toutou Crew`); btn.textContent = '✓ Copié'; } catch (e) { btn.textContent = 'Copie impossible'; } }
     } else if (act === 'addgroup') {
       state.groupEdit[btn.dataset.c] = true; renderResults();
     } else if (act === 'savegroup') {
