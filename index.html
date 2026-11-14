@@ -701,6 +701,22 @@
   .photos-chip.on { background: #fdf1e7; border-color: #e6743f; color: #44413a; font-weight: 600; }
   .photos-chip.off { opacity: 0.5; cursor: not-allowed; }
   .photos-presence select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 0.78rem; font-family: inherit; }
+  .photos-date-input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-family: inherit; font-size: 0.9rem; color: var(--text); margin-top: 6px; }
+  .photos-dog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .photos-dog-card { position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 12px 10px 10px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; }
+  .photos-dog-card.on { border-color: #e6743f; background: #fdf1e7; }
+  .photos-dog-card .photos-check { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line); font-size: 0.7rem; line-height: 17px; color: #fff; background: var(--surface); }
+  .photos-dog-card.on .photos-check { background: #e6743f; border-color: #e6743f; }
+  .photos-dog-card .photos-avatar { width: 52px; height: 52px; margin-bottom: 4px; }
+  .photos-dog-card .photos-dog-owner { font-size: 0.74rem; color: var(--text-dim); }
+  .photos-dog-card .photos-dog-meta { font-size: 0.72rem; }
+  .photos-dog-card .photos-dog-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+  .photos-dog-card .tag { font-size: 0.66rem; color: #c75a1c; font-weight: 600; }
+  .photos-dog-card.add { border-style: dashed; justify-content: center; color: var(--text-dim); font-weight: 600; font-size: 0.82rem; min-height: 120px; background: none; }
+  .photos-dog-card.add:hover { background: var(--surface-2); }
+  .photos-add-panel { margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+  .photos-add-panel label { font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 4px; }
+  .photos-add-panel select { width: 100%; }
   .photos-files { font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 8px; }
   .photos-msg { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 0.84rem; background: var(--bg); color: var(--text); }
   .photos-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
@@ -1657,29 +1673,34 @@
     <div class="page-title">Photos de balade</div>
 
     <div class="photos-card">
-      <div class="photos-card-title">1 · Empreintes des chiens</div>
-      <div class="photos-note">Pour reconnaître un chien, l'appli garde une « empreinte » calculée à partir de sa photo de profil (fiche client) et, si tu veux, de quelques photos de plus (autres angles, de loin). Les photos elles-mêmes ne sont ni envoyées ni stockées : seule l'empreinte (quelques Ko) est enregistrée dans ton Drive.</div>
-      <div id="photos-dogs"></div>
+      <div class="photos-card-title">1 · Date de la balade</div>
+      <input type="date" id="photos-date" class="photos-date-input">
+      <div class="photos-note" id="photos-date-note" style="margin:8px 0 0;">Si tu choisis le dossier de photos plus bas, la date est détectée toute seule.</div>
+    </div>
+
+    <div class="photos-card">
+      <div class="photos-card-title">2 · Chiens de la balade</div>
+      <div class="photos-note" id="photos-dogs-note"></div>
+      <div class="photos-dog-grid" id="photos-dogs"></div>
+      <div id="photos-add-panel" class="photos-add-panel" style="display:none;">
+        <label for="photos-add-client">Client du chien à ajouter</label>
+        <select id="photos-add-client"></select>
+        <div class="photos-chips" id="photos-add-dogs"></div>
+      </div>
       <div class="photos-row" style="margin-top:10px;">
         <button type="button" class="photos-btn" id="photos-compute">Calculer les empreintes manquantes</button>
       </div>
       <div class="photos-status" id="photos-refs-status"></div>
+      <div class="photos-note" style="margin-top:8px;">L'« empreinte » d'un chien est calculée depuis sa photo de profil (fiche client) et les photos que tu ajoutes ici (autres angles, de loin…). Les photos ne sont ni envoyées ni stockées : seule l'empreinte, quelques Ko, est gardée dans ton Drive.</div>
     </div>
 
     <div class="photos-card">
-      <div class="photos-card-title">2 · Photos de la balade</div>
+      <div class="photos-card-title">3 · Photos de la balade</div>
       <div class="photos-note">Choisis le dossier qui contient les photos du jour. L'analyse se fait dans ton navigateur (rien n'est envoyé). Utilise Chrome ou Edge sur ordinateur.</div>
       <div class="photos-row">
         <label class="photos-btn" for="photos-walk-input">Choisir un dossier</label>
         <input type="file" id="photos-walk-input" webkitdirectory multiple>
         <button type="button" class="photos-btn" id="photos-walk-run" disabled>Analyser les photos</button>
-      </div>
-      <div class="photos-presence">
-        <label for="photos-date">Date de la balade</label>
-        <input type="date" id="photos-date">
-        <div class="photos-note" id="photos-present-note" style="margin:0;"></div>
-        <div class="photos-chips" id="photos-present-chips"></div>
-        <select id="photos-present-add" title="Ajouter un chien qui n'est pas prévu ce jour-là"></select>
       </div>
       <details class="photos-sliders">
         <summary>Réglages de la reconnaissance</summary>
@@ -4926,19 +4947,23 @@ document.getElementById('clients-search').addEventListener('input', renderClient
 // Création d'un client sans abonnement ni encaissement (en prévision de...)
 const newClientOverlay = document.getElementById('newclient-overlay');
 const newClientModal = document.getElementById('newclient-modal');
+let newClientOnCreated = null; // appelé avec le client créé (sinon on ouvre sa fiche)
 function closeNewClientModal() {
+  newClientOnCreated = null;
   newClientOverlay.classList.remove('open');
   newClientModal.classList.remove('open');
   newClientModal.setAttribute('aria-hidden', 'true');
 }
-document.getElementById('open-add-client-only').addEventListener('click', () => {
+function openNewClientModal(onCreated) {
+  newClientOnCreated = onCreated || null;
   ['nc-owner', 'nc-dog', 'nc-dog2'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('nc-error').style.display = 'none';
   newClientOverlay.classList.add('open');
   newClientModal.classList.add('open');
   newClientModal.setAttribute('aria-hidden', 'false');
   setTimeout(() => document.getElementById('nc-owner').focus(), 50);
-});
+}
+document.getElementById('open-add-client-only').addEventListener('click', () => openNewClientModal());
 document.getElementById('nc-cancel').addEventListener('click', closeNewClientModal);
 newClientOverlay.addEventListener('click', closeNewClientModal);
 document.getElementById('nc-save').addEventListener('click', async () => {
@@ -4963,9 +4988,11 @@ document.getElementById('nc-save').addEventListener('click', async () => {
     err.style.display = 'block';
     return;
   }
+  const afterCreate = newClientOnCreated;
   closeNewClientModal();
   render();
-  openClientDetail(client.id); // on complète la fiche (adresse, téléphone, formule…)
+  if (afterCreate) afterCreate(client);
+  else openClientDetail(client.id); // on complète la fiche (adresse, téléphone, formule…)
 });
 
 // Side panel (add encaissement)
@@ -6142,7 +6169,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const esc = (t) => escapeHtml(String(t == null ? '' : t));
 
   let tf = null, detector = null, embedder = null;
-  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set() };
+  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set(), extra: new Set(), addOpen: false };
 
   // ---------- fichiers / images ----------
   const isImage = (f) => IMG_EXT.includes(f.name.split('.').pop().toLowerCase()) && !f.name.startsWith('.');
@@ -6288,36 +6315,95 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     const extra = items.filter(i => i.k === 'x').length;
     return { items, profile, profileStale, extra, usable: items.length > 0 };
   }
+  const needsEmbed = ({ dog }) => !!dog.photo && (!dogEmbedInfo(dog).profile || dogEmbedInfo(dog).profileStale);
+  function shownDogs() { // chiens du planning à cette date + chiens ajoutés à la main
+    const list = scheduledOn($('photos-date').value);
+    const seen = new Set(list.map(x => x.key));
+    activeDogs().forEach(x => { if (state.extra.has(x.key) && !seen.has(x.key)) list.push(x); });
+    return list.sort((a, b) => a.dog.name.localeCompare(b.dog.name));
+  }
   function renderDogs() {
-    const list = activeDogs();
-    const box = $('photos-dogs');
-    if (!list.length) { box.innerHTML = '<div class="photos-note">Aucun chien dans les fiches clients.</div>'; return; }
-    box.innerHTML = list.map(({ client, dog, key }) => {
+    const date = $('photos-date').value;
+    const shown = shownDogs();
+    const schedKeys = new Set(scheduledOn(date).map(x => x.key));
+    $('photos-dogs-note').textContent = !date ? 'Choisis d\'abord la date de la balade.'
+      : shown.length ? 'Chiens attendus ce jour-là d\'après le planning. Clique sur une carte pour (dé)cocher un chien : l\'IA ne cherche que parmi les chiens cochés.'
+      : 'Aucun chien prévu ce jour-là : ajoute ceux qui étaient là, sinon tous les chiens seront comparés.';
+    let html = shown.map(({ client, dog, key }) => {
       const info = dogEmbedInfo(dog);
+      const on = state.present.has(key);
       let meta, cls = '';
       if (info.usable && !info.profileStale) { meta = `✓ ${info.items.length} empreinte${info.items.length > 1 ? 's' : ''}`; cls = 'ok'; }
-      else if (info.usable) { meta = `${info.items.length} empreinte(s) · la photo de profil a changé, à recalculer`; cls = 'warn'; }
-      else if (dog.photo) { meta = 'Pas encore d\'empreinte (photo de profil prête)'; cls = 'warn'; }
-      else { meta = 'Pas de photo de profil : ajoute-en une dans la fiche ou ici'; cls = 'warn'; }
-      return `<div class="photos-dog-row">
+      else if (info.usable) { meta = `${info.items.length} empreinte(s) · profil modifié, à recalculer`; cls = 'warn'; }
+      else if (dog.photo) { meta = 'Empreinte à calculer'; cls = 'warn'; }
+      else { meta = 'Aucune photo : ajoutes-en une'; cls = 'warn'; }
+      const isExtra = !schedKeys.has(key);
+      return `<div class="photos-dog-card${on ? ' on' : ''}" data-key="${esc(key)}">
+        <span class="photos-check">${on ? '✓' : ''}</span>
         <div class="photos-avatar">${dog.photo ? `<img src="${dog.photo}" alt="">` : '🐶'}</div>
-        <div class="photos-dog-main">
-          <div class="photos-dog-name">${esc(dog.name)} <span style="font-weight:400;color:var(--text-dim);">· ${esc(client.ownerName)}</span></div>
-          <div class="photos-dog-meta ${cls}">${meta}${info.extra ? ` (dont ${info.extra} photo${info.extra > 1 ? 's' : ''} ajoutée${info.extra > 1 ? 's' : ''})` : ''}</div>
+        <div class="photos-dog-name">${esc(dog.name)}</div>
+        <div class="photos-dog-owner">${esc(client.ownerName)}</div>
+        ${isExtra ? '<div class="tag">ajouté à la main</div>' : ''}
+        <div class="photos-dog-meta ${cls}">${meta}</div>
+        <div class="photos-dog-meta">${info.extra} photo${info.extra > 1 ? 's' : ''} ajoutée${info.extra > 1 ? 's' : ''}</div>
+        <div class="photos-dog-btns">
+          <label class="photos-btn ghost small" for="photos-ref-${esc(key)}" title="Ajouter des photos de référence (autres angles, de loin…)">+ Photos</label>
+          <input type="file" id="photos-ref-${esc(key)}" data-ref-key="${esc(key)}" accept="image/*,.heic,.heif" multiple>
+          ${info.extra ? `<button type="button" class="photos-btn ghost small" data-clear-key="${esc(key)}" title="Retirer les photos ajoutées (garde la photo de profil)">Vider</button>` : ''}
+          ${isExtra ? `<button type="button" class="photos-btn ghost small" data-unshow-key="${esc(key)}" title="Retirer ce chien de la balade">Retirer</button>` : ''}
         </div>
-        <label class="photos-btn ghost small" for="photos-ref-${esc(key)}" title="Ajouter des photos de référence (autres angles, de loin…)">+ Photos</label>
-        <input type="file" id="photos-ref-${esc(key)}" data-ref-key="${esc(key)}" accept="image/*,.heic,.heif" multiple>
-        ${info.extra ? `<button type="button" class="photos-btn ghost small" data-clear-key="${esc(key)}" title="Retirer les photos ajoutées">✕</button>` : ''}
       </div>`;
     }).join('');
+    html += '<div class="photos-dog-card add" data-add="1">+ Ajouter un chien<br>non prévu</div>';
+    $('photos-dogs').innerHTML = html;
+    $('photos-compute').style.display = shown.some(needsEmbed) ? '' : 'none';
+    renderAddPanel();
   }
+
+  // ----- ajout d'un chien non prévu : on choisit un client (ou on en crée un) -----
+  function renderAddPanel() {
+    const panel = $('photos-add-panel');
+    panel.style.display = state.addOpen ? 'block' : 'none';
+    if (!state.addOpen) return;
+    const cl = (clients || []).filter(c => !c.archived).sort((a, b) => (a.ownerName || '').localeCompare(b.ownerName || ''));
+    const cur = $('photos-add-client').value;
+    $('photos-add-client').innerHTML = '<option value="">Choisir un client…</option>' +
+      cl.map(c => `<option value="${esc(c.id)}">${esc(c.ownerName)} — ${esc((c.dogs || []).map(d => d.name).join(' & '))}</option>`).join('') +
+      '<option value="__new__">+ Nouveau client (absent de la liste)…</option>';
+    $('photos-add-client').value = cur && cl.some(c => c.id === cur) ? cur : '';
+    renderAddDogs();
+  }
+  function renderAddDogs() {
+    const c = getClientById($('photos-add-client').value);
+    $('photos-add-dogs').innerHTML = c ? (c.dogs || []).map(d => `<span class="photos-chip" data-add-key="${esc(c.id + '|' + d.id)}">+ ${esc(d.name)}</span>`).join('') : '';
+  }
+  function addExtraDogs(keys) {
+    keys.forEach(k => { state.extra.add(k); state.present.add(k); });
+    state.addOpen = false;
+    $('photos-add-client').value = '';
+    renderDogs(); applyAuto(); renderResults();
+  }
+  $('photos-add-client').addEventListener('change', (ev) => {
+    if (ev.target.value === '__new__') {
+      ev.target.value = '';
+      openNewClientModal((client) => addExtraDogs((client.dogs || []).map(d => client.id + '|' + d.id)));
+      return;
+    }
+    const c = getClientById(ev.target.value);
+    if (c && (c.dogs || []).length === 1) { addExtraDogs([c.id + '|' + c.dogs[0].id]); return; }
+    renderAddDogs();
+  });
+  $('photos-add-dogs').addEventListener('click', (ev) => {
+    const chip = ev.target.closest('[data-add-key]');
+    if (chip) addExtraDogs([chip.dataset.addKey]);
+  });
 
   async function computeMissing() {
     const st = $('photos-refs-status'), btn = $('photos-compute');
     btn.disabled = true;
     try {
-      const todo = activeDogs().filter(({ dog }) => dog.photo && (!dogEmbedInfo(dog).profile || dogEmbedInfo(dog).profileStale));
-      if (!todo.length) { st.textContent = 'Toutes les empreintes sont à jour.'; return; }
+      const todo = shownDogs().filter(needsEmbed);
+      if (!todo.length) { st.textContent = 'Toutes les empreintes sont à jour.'; btn.disabled = false; return; }
       await loadModels(st);
       let i = 0, failed = [];
       for (const { dog } of todo) {
@@ -6331,7 +6417,6 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       }
       await saveClients();
       renderDogs();
-      if ($('photos-date').value) resetPresence();
       st.innerHTML = `✓ ${todo.length - failed.length} empreinte(s) enregistrée(s).` + (failed.length ? `<br><span class="bad">Échec : ${esc(failed.join(' ; '))}</span>` : '');
     } catch (err) { st.innerHTML = `<span class="bad">Erreur : ${esc(errText(err))}</span>`; console.error(err); }
     btn.disabled = false;
@@ -6369,13 +6454,28 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (inp && inp.files.length) { addRefPhotos(inp.dataset.refKey, inp.files).then(() => { inp.value = ''; }); }
   });
   $('photos-dogs').addEventListener('click', async (ev) => {
-    const b = ev.target.closest('[data-clear-key]');
-    if (!b) return;
-    const found = activeDogs().find(x => x.key === b.dataset.clearKey);
-    if (!found || !found.dog.embeds) return;
-    found.dog.embeds.items = found.dog.embeds.items.filter(it => it.k !== 'x');
-    await saveClients();
-    renderDogs();
+    const clr = ev.target.closest('[data-clear-key]');
+    const uns = ev.target.closest('[data-unshow-key]');
+    if (clr) {
+      const found = activeDogs().find(x => x.key === clr.dataset.clearKey);
+      if (!found || !found.dog.embeds) return;
+      found.dog.embeds.items = found.dog.embeds.items.filter(it => it.k !== 'x');
+      await saveClients();
+      renderDogs();
+      return;
+    }
+    if (uns) {
+      state.extra.delete(uns.dataset.unshowKey); state.present.delete(uns.dataset.unshowKey);
+      renderDogs(); applyAuto(); renderResults();
+      return;
+    }
+    if (ev.target.closest('label, input, button')) return;
+    if (ev.target.closest('[data-add]')) { state.addOpen = !state.addOpen; renderAddPanel(); return; }
+    const card = ev.target.closest('.photos-dog-card[data-key]');
+    if (!card) return;
+    const k = card.dataset.key;
+    if (state.present.has(k)) state.present.delete(k); else state.present.add(k);
+    renderDogs(); applyAuto(); renderResults();
   });
 
   // ---------- analyse du dossier du jour ----------
@@ -6406,41 +6506,12 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     const code = DOW_CODE_BY_JS_DAY[new Date(dateStr + 'T00:00:00').getDay()];
     return activeDogs().filter(({ dog }) => dog.isTrial ? dog.trialDate === dateStr : (!!code && (dog.walkDays || []).includes(code)));
   }
-  function resetPresence() { // sélectionne par défaut les chiens du planning avec empreinte
-    state.present = new Set(scheduledOn($('photos-date').value).filter(x => dogEmbedInfo(x.dog).usable).map(x => x.key));
-    renderPresence();
+  function resetPresence() { // par défaut : tous les chiens du planning sont cochés
+    state.extra = new Set();
+    state.present = new Set(scheduledOn($('photos-date').value).map(x => x.key));
+    state.addOpen = false;
+    renderDogs();
   }
-  function renderPresence() {
-    const date = $('photos-date').value;
-    const sched = scheduledOn(date);
-    const schedKeys = new Set(sched.map(x => x.key));
-    const extras = [...state.present].filter(k => !schedKeys.has(k)).map(k => activeDogs().find(x => x.key === k)).filter(Boolean);
-    const all = [...sched, ...extras];
-    $('photos-present-note').textContent = !date ? '' : all.length
-      ? 'Chiens attendus ce jour-là d\'après le planning (décoche ceux qui ne sont pas venus) : l\'IA ne cherche que parmi eux.'
-      : 'Aucun chien prévu ce jour-là : tous les chiens seront comparés.';
-    $('photos-present-chips').innerHTML = all.map(({ client, dog, key }) => {
-      const usable = dogEmbedInfo(dog).usable;
-      return `<span class="photos-chip ${usable ? (state.present.has(key) ? 'on' : '') : 'off'}" data-key="${esc(key)}" title="${usable ? '' : 'Pas d\'empreinte pour ce chien'}">${state.present.has(key) && usable ? '✓ ' : ''}${esc(dog.name)}${usable ? '' : ' (sans empreinte)'}</span>`;
-    }).join('');
-    const others = activeDogs().filter(x => !schedKeys.has(x.key) && !state.present.has(x.key) && dogEmbedInfo(x.dog).usable);
-    const sel = $('photos-present-add');
-    sel.innerHTML = '<option value="">+ Ajouter un autre chien…</option>' + others.map(x => `<option value="${esc(x.key)}">${esc(x.dog.name)} (${esc(ownerFirstName(x.client))})</option>`).join('');
-    sel.style.display = others.length ? '' : 'none';
-  }
-  function presenceChanged() { applyAuto(); renderPresence(); renderResults(); }
-  $('photos-present-chips').addEventListener('click', (ev) => {
-    const chip = ev.target.closest('.photos-chip');
-    if (!chip || chip.classList.contains('off')) return;
-    const k = chip.dataset.key;
-    if (state.present.has(k)) state.present.delete(k); else state.present.add(k);
-    presenceChanged();
-  });
-  $('photos-present-add').addEventListener('change', (ev) => {
-    if (!ev.target.value) return;
-    state.present.add(ev.target.value);
-    presenceChanged();
-  });
   $('photos-date').addEventListener('change', () => { resetPresence(); applyAuto(); renderResults(); });
   ['photos-thr', 'photos-mar'].forEach(id => $(id).addEventListener('input', () => {
     $('photos-thr-val').textContent = $('photos-thr').value; $('photos-mar-val').textContent = $('photos-mar').value;
@@ -6478,6 +6549,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
 
   async function analyse() {
     const st = $('photos-walk-status'), btn = $('photos-walk-run');
+    if (shownDogs().some(needsEmbed)) { btn.disabled = true; await computeMissing(); }
     const refs = activeDogs().map(({ dog, key }) => ({ key, vecs: dogEmbedInfo(dog).items.map(i => unpackVec(i.v)) })).filter(r => r.vecs.length);
     if (!refs.length) { st.innerHTML = '<span class="bad">Aucune empreinte de chien : calcule-les d\'abord (étape 1).</span>'; return; }
     btn.disabled = true; state.photos = []; state.msgs = {}; state.sent = {}; renderResults();
@@ -6686,7 +6758,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
 
   document.querySelector('.tab[data-panel="photos"]').addEventListener('click', () => {
     renderDogs();
-    if (!$('photos-date').value) { $('photos-date').value = todayISO(); resetPresence(); } else renderPresence();
+    if (!$('photos-date').value) { $('photos-date').value = todayISO(); resetPresence(); } else renderDogs();
   });
   window.__photos = { state, packVec, unpackVec, VARIANTS, buildMessage, renderDogs, renderResults };
 })();
