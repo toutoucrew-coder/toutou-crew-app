@@ -6704,8 +6704,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     let i; do { i = Math.floor(Math.random() * VARIANTS.length); } while ((i === state.lastVariant || i === exclude) && VARIANTS.length > 2);
     state.lastVariant = i; return i;
   }
-  function buildMessage(group, idx) {
-    return VARIANTS[idx](ownerFirstName(group.client), group.dogNames, greeting());
+  function buildMessage(group, idx, addr) {
+    return VARIANTS[idx](addr || ownerFirstName(group.client), group.dogNames, greeting());
   }
 
   // ---------- regroupement par client ----------
@@ -6742,19 +6742,27 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     return o;
   }
   const currentRecipient = (c) => { const o = recipientOptions(c); return o.find(x => x.k === c.photoRecipient) || o[0] || null; };
-  function textFor(g, kind) { // le message est écrit pour le propriétaire ; on remplace son prénom pour les autres destinataires
-    const text = groupMessage(g).text, c = g.client, p = ownerFirstName(c), q = conjFirstName(c);
-    const i = p ? text.indexOf(p) : -1;
-    if (i < 0 || kind === 'principal') return text;
-    const who = kind === 'conjoint' ? q : kind === 'group' ? `${p} et ${q}` : p;
-    return text.slice(0, i) + who + text.slice(i + p.length);
+  // Prénom(s) du message selon le destinataire : un seul pour « propriétaire » ou « conjoint »,
+  // les deux (« Élodie et Julien ») pour « Les deux » et « Groupe ».
+  function addressee(c, kind) {
+    const p = ownerFirstName(c), q = (c.conjointPrenom || '').trim().split(/\s+/)[0] || '';
+    if (kind === 'conjoint') return q || p;
+    if ((kind === 'both' || kind === 'group') && p && q) return `${p} et ${q}`;
+    return p;
   }
   function groupMessage(g) {
     const cid = g.client.id, names = g.dogNames.join('|');
+    const rc = currentRecipient(g.client);
+    const addr = addressee(g.client, rc ? rc.k : 'principal');
     let m = state.msgs[cid];
-    if (!m) m = state.msgs[cid] = { idx: pickVariant(), text: '', names: '', edited: false };
-    if (!m.edited && m.names !== names) { m.text = buildMessage(g, m.idx); m.names = names; }
+    if (!m) m = state.msgs[cid] = { idx: pickVariant(), text: '', names: '', addr: '', edited: false };
+    if (!m.edited && (m.names !== names || m.addr !== addr)) { m.text = buildMessage(g, m.idx, addr); m.names = names; m.addr = addr; }
     return m;
+  }
+  function textFor(g, kind) { // texte réellement envoyé : si le message a été modifié à la main, on ajuste juste le(s) prénom(s)
+    const m = groupMessage(g), want = addressee(g.client, kind);
+    const i = m.addr && m.addr !== want ? m.text.indexOf(m.addr) : -1;
+    return i < 0 ? m.text : m.text.slice(0, i) + want + m.text.slice(i + m.addr.length);
   }
 
   // ---------- journal des envois, conservé par date dans le Drive ----------
@@ -7016,8 +7024,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         markSent(cid, names);
       } else if (rcpt.k === 'both') {
         const opts = recipientOptions(g.client);
-        if (!state.bothStep[cid]) { if (!open(opts.find(o => o.k === 'principal').phone, 'principal')) return blocked(); state.bothStep[cid] = 1; }
-        else { if (!open(opts.find(o => o.k === 'conjoint').phone, 'conjoint')) return blocked(); state.bothStep[cid] = 0; markSent(cid, names); }
+        if (!state.bothStep[cid]) { if (!open(opts.find(o => o.k === 'principal').phone, 'both')) return blocked(); state.bothStep[cid] = 1; }
+        else { if (!open(opts.find(o => o.k === 'conjoint').phone, 'both')) return blocked(); state.bothStep[cid] = 0; markSent(cid, names); }
       } else if (rcpt.k === 'group') {
         try { await navigator.clipboard.writeText(textFor(g, 'group')); state.groupNote[cid] = 'Message copié : colle-le dans le groupe (Cmd + V).'; }
         catch (e) { state.groupNote[cid] = 'Copie impossible : copie le message ci-dessous à la main.'; }
