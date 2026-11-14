@@ -111,26 +111,37 @@ function truthFromWalk(file) {
   return names.find(n => parts.includes(n.toLowerCase())) || null;
 }
 
-async function ensureHeic2any() {
-  if (window.heic2any) return;
-  await new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-    s.onload = res; s.onerror = () => rej(new Error('Conversion HEIC indisponible'));
-    document.head.appendChild(s);
-  });
-}
-async function fileToBlob(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'heic' || ext === 'heif') {
-    await ensureHeic2any();
+const scriptPromises = {};
+const loadScript = (src) => scriptPromises[src] || (scriptPromises[src] = new Promise((res, rej) => {
+  const el = document.createElement('script');
+  el.src = src; el.onload = res; el.onerror = () => rej(new Error('script indisponible'));
+  document.head.appendChild(el);
+}));
+const errText = (e) => (e && e.message) ? e.message : String(e);
+// HEIC (iPhone) : décodage natif si le navigateur sait, sinon heic-to (libheif récent), sinon heic2any.
+async function heicToJpeg(file) {
+  const errors = [];
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/heic-to@1.6.7/dist/iife/heic-to.js');
+    const fn = typeof HeicTo === 'function' ? HeicTo : HeicTo.heicTo;
+    return await fn({ blob: file, type: 'image/jpeg', quality: 0.9 });
+  } catch (e) { errors.push('heic-to : ' + errText(e)); }
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js');
     const out = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
     return Array.isArray(out) ? out[0] : out;
-  }
-  return file;
+  } catch (e) { errors.push('heic2any : ' + errText(e)); }
+  throw new Error(`photo HEIC illisible (${errors.join(' / ')}). Astuce : exporte-la en JPEG depuis Photos ou Aperçu.`);
+}
+async function fileToBitmap(file) {
+  const opts = { imageOrientation: 'from-image' };
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext !== 'heic' && ext !== 'heif') return createImageBitmap(file, opts);
+  try { return await createImageBitmap(file, opts); } catch { /* pas de décodage natif */ }
+  return createImageBitmap(await heicToJpeg(file), opts);
 }
 async function fileToCanvas(file, maxSide = 1280) {
-  const bmp = await createImageBitmap(await fileToBlob(file), { imageOrientation: 'from-image' });
+  const bmp = await fileToBitmap(file);
   const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas');
   c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
@@ -205,20 +216,24 @@ $('refs-run').addEventListener('click', async () => {
   const st = $('refs-status'); $('refs-run').disabled = true; refs = {};
   try {
     await loadModels(st);
-    let i = 0;
+    let i = 0; const skipped = [];
     for (const f of refFiles) {
       st.textContent = `Empreinte des références : ${++i}/${refFiles.length}`;
-      const canvas = await fileToCanvas(f);
-      const dets = await detectDogs(canvas);
-      const best = dets.sort((a, b) => (b.box.xmax - b.box.xmin) * (b.box.ymax - b.box.ymin) - (a.box.xmax - a.box.xmin) * (a.box.ymax - a.box.ymin))[0];
-      const crop = cropSquare(canvas, best ? best.box : wholeBox(canvas));
-      const name = dogNameFromRef(f);
-      (refs[name] = refs[name] || []).push({ vec: await embedCanvas(crop), file: f.name, noDog: !best });
+      try {
+        const canvas = await fileToCanvas(f);
+        const dets = await detectDogs(canvas);
+        const best = dets.sort((a, b) => (b.box.xmax - b.box.xmin) * (b.box.ymax - b.box.ymin) - (a.box.xmax - a.box.xmin) * (a.box.ymax - a.box.ymin))[0];
+        const crop = cropSquare(canvas, best ? best.box : wholeBox(canvas));
+        const name = dogNameFromRef(f);
+        (refs[name] = refs[name] || []).push({ vec: await embedCanvas(crop), file: f.name, noDog: !best });
+      } catch (err) { skipped.push(`${relPath(f)} (${errText(err)})`); console.error(f.name, err); }
     }
     const noDog = Object.values(refs).flat().filter(r => r.noDog).length;
-    st.innerHTML = `✓ Prêt : ${Object.keys(refs).length} chien(s) enregistré(s).` + (noDog ? ` <span style="color:var(--warn)">${noDog} photo(s) sans chien détecté (image entière utilisée).</span>` : '');
-    $('walk-run').disabled = walkFiles.length === 0;
-  } catch (err) { st.textContent = 'Erreur : ' + err.message; console.error(err); }
+    st.innerHTML = (Object.keys(refs).length ? `✓ Prêt : ${Object.keys(refs).length} chien(s) enregistré(s).` : '<span style="color:var(--bad)">Aucune photo de référence exploitable.</span>')
+      + (noDog ? ` <span style="color:var(--warn)">${noDog} photo(s) sans chien détecté (image entière utilisée).</span>` : '')
+      + (skipped.length ? `<br><span style="color:var(--bad)">${skipped.length} photo(s) ignorée(s) :</span><br><span style="font-size:0.78rem;">${skipped.map(x => x.replace(/</g, '&lt;')).join('<br>')}</span>` : '');
+    $('walk-run').disabled = walkFiles.length === 0 || Object.keys(refs).length === 0;
+  } catch (err) { st.textContent = 'Erreur : ' + errText(err); console.error(err); }
   $('refs-run').disabled = false;
 });
 
@@ -318,7 +333,7 @@ function renderSummary() {
       Parmi les « sûr » jugés : ${sureTotal - sureWrong}/${sureTotal} corrects.` : '<span style="color:var(--dim)">Clique sur ✓ Bon / ✗ Faux sous chaque chien pour mesurer la fiabilité.</span>'}`;
 }
 // pour les tests automatiques
-window.__test = { get refs() { return refs; }, get results() { return results; } };
+window.__test = { get refs() { return refs; }, get results() { return results; }, fileToCanvas, heicToJpeg };
 </script>
 </body>
 </html>
