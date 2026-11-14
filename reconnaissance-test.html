@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<title>Test de reconnaissance des chiens</title>
+<style>
+  :root { --bg:#f2e9d8; --surface:#faf3e6; --surface-2:#ede1c9; --line:#d9c8a3; --accent:#4a9cf1; --text:#44413a; --dim:#8a8372; --ok:#3f7a3d; --warn:#e6743f; --bad:#b9432f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system, 'Inter', sans-serif; line-height:1.45; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size:1.4rem; margin:0 0 6px; }
+  h2 { font-size:1.05rem; margin:0 0 10px; }
+  .sub { color:var(--dim); font-size:0.88rem; margin-bottom:18px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  button, .filebtn { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:9px 14px; font-weight:600; font-size:0.88rem; cursor:pointer; }
+  button:disabled { opacity:0.45; cursor:not-allowed; }
+  button.ghost { background:none; color:var(--dim); border:1px solid var(--line); }
+  input[type=file] { display:none; }
+  select, input[type=range] { font-size:0.85rem; }
+  select { padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); }
+  .note { font-size:0.8rem; color:var(--dim); margin-top:8px; }
+  .status { font-size:0.85rem; margin-top:10px; min-height:1.2em; }
+  .refs-list { font-size:0.85rem; margin-top:10px; }
+  .summary { position:sticky; top:0; z-index:5; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 16px; margin-bottom:14px; font-size:0.9rem; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap:12px; }
+  .photo { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .photo canvas { width:100%; display:block; background:#ddd; }
+  .photo .body { padding:10px 12px; }
+  .photo .fname { font-size:0.74rem; color:var(--dim); margin-bottom:6px; word-break:break-all; }
+  .det { border-top:1px solid var(--line); padding:8px 0; font-size:0.84rem; }
+  .det:first-of-type { border-top:none; }
+  .badge { display:inline-block; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px; margin-left:6px; }
+  .badge.sure { background:rgba(63,122,61,.15); color:var(--ok); }
+  .badge.check { background:rgba(230,116,63,.15); color:var(--warn); }
+  .cands { color:var(--dim); font-size:0.78rem; margin:3px 0 6px; }
+  .judge { display:flex; gap:6px; align-items:center; }
+  .judge button { padding:4px 10px; font-size:0.8rem; }
+  .judge .yes { background:var(--ok); } .judge .no { background:var(--bad); }
+  .judged-ok { color:var(--ok); font-weight:700; } .judged-bad { color:var(--bad); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐶 Test de reconnaissance des chiens</h1>
+  <div class="sub">Page de test : tout est calculé dans ton navigateur, <strong>aucune photo n'est envoyée</strong> (seuls les modèles d'IA sont téléchargés une fois, puis gardés en cache). Utilise Chrome ou Edge sur ordinateur.</div>
+
+  <div class="card">
+    <h2>1. Photos de référence</h2>
+    <div class="note" style="margin-top:0;margin-bottom:10px;">Choisis un dossier qui contient <strong>un sous-dossier par chien</strong> (ex. <code>Maya/</code>, <code>Rex/</code>) avec 2 à 5 photos de chacun. À défaut, des photos nommées <code>Maya 1.jpg</code>, <code>Maya 2.jpg</code>… fonctionnent aussi.</div>
+    <div class="row">
+      <label class="filebtn" for="refs-input">Choisir le dossier des références</label>
+      <input type="file" id="refs-input" webkitdirectory multiple>
+      <select id="model-select" title="Modèle de reconnaissance">
+        <option value="Xenova/dinov2-small">Modèle rapide (dinov2-small)</option>
+        <option value="Xenova/dinov2-base">Modèle précis, plus lent (dinov2-base)</option>
+      </select>
+      <button id="refs-run" disabled>Calculer les empreintes</button>
+    </div>
+    <div class="refs-list" id="refs-list"></div>
+    <div class="status" id="refs-status"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Photos de la balade</h2>
+    <div class="note" style="margin-top:0;margin-bottom:10px;">Choisis un dossier de photos (celui d'une balade, par exemple). Si tes photos sont déjà rangées dans des sous-dossiers au nom du chien, la page vérifie toute seule les réponses.</div>
+    <div class="row">
+      <label class="filebtn" for="walk-input">Choisir le dossier de photos</label>
+      <input type="file" id="walk-input" webkitdirectory multiple>
+      <button id="walk-run" disabled>Analyser les photos</button>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <label style="font-size:0.82rem;">Confiance minimale : <strong id="thr-val">55</strong> %
+        <input type="range" id="thr" min="20" max="95" value="55"></label>
+      <label style="font-size:0.82rem;">Écart minimal avec le 2e chien : <strong id="mar-val">5</strong> points
+        <input type="range" id="mar" min="0" max="30" value="5"></label>
+    </div>
+    <div class="status" id="walk-status"></div>
+  </div>
+
+  <div class="summary" id="summary" style="display:none;"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script type="module">
+import { pipeline, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+env.allowLocalModels = false;
+
+const IMG_EXT = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+const $ = (id) => document.getElementById(id);
+let detector = null, embedder = null, loadedModel = null;
+let refFiles = [], walkFiles = [];
+let refs = {};               // { nom: [{ vec }] }
+let results = [];            // une entrée par photo analysée
+
+// ---------- utilitaires fichiers ----------
+const relPath = (f) => f.webkitRelativePath || f._testPath || f.name;
+const isImage = (f) => IMG_EXT.includes(f.name.split('.').pop().toLowerCase()) && !f.name.startsWith('.');
+
+function dogNameFromRef(file) {
+  const parts = relPath(file).split('/');
+  if (parts.length >= 3) return parts[1];
+  return parts[parts.length - 1].replace(/\.[^.]+$/, '').replace(/[\s_\-]*\d+$/, '').trim() || 'Inconnu';
+}
+function truthFromWalk(file) {
+  const parts = relPath(file).split('/').slice(1, -1).map(p => p.toLowerCase());
+  const names = Object.keys(refs);
+  return names.find(n => parts.includes(n.toLowerCase())) || null;
+}
+
+async function ensureHeic2any() {
+  if (window.heic2any) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+    s.onload = res; s.onerror = () => rej(new Error('Conversion HEIC indisponible'));
+    document.head.appendChild(s);
+  });
+}
+async function fileToBlob(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'heic' || ext === 'heif') {
+    await ensureHeic2any();
+    const out = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    return Array.isArray(out) ? out[0] : out;
+  }
+  return file;
+}
+async function fileToCanvas(file, maxSide = 1280) {
+  const bmp = await createImageBitmap(await fileToBlob(file), { imageOrientation: 'from-image' });
+  const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  if (bmp.close) bmp.close();
+  return c;
+}
+const canvasToRaw = (canvas) => new Promise((res, rej) =>
+  canvas.toBlob(b => b ? RawImage.fromBlob(b).then(res, rej) : rej(new Error('canvas vide')), 'image/jpeg', 0.92));
+
+// ---------- modèles ----------
+async function loadModels(statusEl) {
+  const modelId = $('model-select').value;
+  const progress = (p) => {
+    if (p.status === 'progress' && p.file) statusEl.textContent = `Téléchargement du modèle (${p.file.split('/').pop()}) : ${Math.round(p.progress || 0)} %`;
+  };
+  if (!detector) {
+    statusEl.textContent = 'Chargement du détecteur de chiens… (première fois : environ 1 minute)';
+    detector = await pipeline('object-detection', 'Xenova/yolos-tiny', { progress_callback: progress });
+  }
+  if (!embedder || loadedModel !== modelId) {
+    statusEl.textContent = 'Chargement du modèle de reconnaissance…';
+    embedder = await pipeline('image-feature-extraction', modelId, { progress_callback: progress });
+    loadedModel = modelId;
+  }
+}
+
+// ---------- détection + empreinte ----------
+async function detectDogs(canvas) {
+  const raw = await canvasToRaw(canvas);
+  const dets = await detector(raw, { threshold: 0.4 });
+  return dets.filter(d => d.label === 'dog').sort((a, b) => b.score - a.score);
+}
+function cropSquare(canvas, box, margin = 0.08) {
+  const w = box.xmax - box.xmin, h = box.ymax - box.ymin;
+  const side = Math.min(Math.max(w, h) * (1 + margin * 2), Math.min(canvas.width, canvas.height));
+  const cx = (box.xmin + box.xmax) / 2, cy = (box.ymin + box.ymax) / 2;
+  const x = Math.min(Math.max(0, cx - side / 2), canvas.width - side);
+  const y = Math.min(Math.max(0, cy - side / 2), canvas.height - side);
+  const out = document.createElement('canvas');
+  out.width = out.height = Math.round(Math.max(224, Math.min(side, 448)));
+  out.getContext('2d').drawImage(canvas, x, y, side, side, 0, 0, out.width, out.height);
+  return out;
+}
+const wholeBox = (c) => ({ xmin: 0, ymin: 0, xmax: c.width, ymax: c.height });
+function l2(v) { let n = 0; for (const x of v) n += x * x; n = Math.sqrt(n) || 1; return v.map(x => x / n); }
+async function embedCanvas(canvas) {
+  const out = await embedder(await canvasToRaw(canvas));
+  const dims = out.dims, data = out.data;
+  if (dims.length === 3) {                       // [1, jetons, dim] : jeton CLS + moyenne des patchs
+    const tokens = dims[1], dim = dims[2];
+    const cls = Array.from(data.slice(0, dim));
+    const mean = new Array(dim).fill(0);
+    for (let t = 1; t < tokens; t++) for (let d = 0; d < dim; d++) mean[d] += data[t * dim + d] / (tokens - 1);
+    return l2([...l2(cls), ...l2(mean)]);
+  }
+  return l2(Array.from(data));
+}
+const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+
+// ---------- 1. références ----------
+$('refs-input').addEventListener('change', (e) => {
+  refFiles = [...e.target.files].filter(isImage);
+  const groups = {};
+  refFiles.forEach(f => { const n = dogNameFromRef(f); groups[n] = (groups[n] || 0) + 1; });
+  $('refs-list').innerHTML = Object.keys(groups).length
+    ? Object.entries(groups).map(([n, c]) => `• <strong>${n}</strong> : ${c} photo${c > 1 ? 's' : ''}`).join('<br>')
+    : 'Aucune image trouvée dans ce dossier.';
+  $('refs-run').disabled = refFiles.length === 0;
+});
+$('refs-run').addEventListener('click', async () => {
+  const st = $('refs-status'); $('refs-run').disabled = true; refs = {};
+  try {
+    await loadModels(st);
+    let i = 0;
+    for (const f of refFiles) {
+      st.textContent = `Empreinte des références : ${++i}/${refFiles.length}`;
+      const canvas = await fileToCanvas(f);
+      const dets = await detectDogs(canvas);
+      const best = dets.sort((a, b) => (b.box.xmax - b.box.xmin) * (b.box.ymax - b.box.ymin) - (a.box.xmax - a.box.xmin) * (a.box.ymax - a.box.ymin))[0];
+      const crop = cropSquare(canvas, best ? best.box : wholeBox(canvas));
+      const name = dogNameFromRef(f);
+      (refs[name] = refs[name] || []).push({ vec: await embedCanvas(crop), file: f.name, noDog: !best });
+    }
+    const noDog = Object.values(refs).flat().filter(r => r.noDog).length;
+    st.innerHTML = `✓ Prêt : ${Object.keys(refs).length} chien(s) enregistré(s).` + (noDog ? ` <span style="color:var(--warn)">${noDog} photo(s) sans chien détecté (image entière utilisée).</span>` : '');
+    $('walk-run').disabled = walkFiles.length === 0;
+  } catch (err) { st.textContent = 'Erreur : ' + err.message; console.error(err); }
+  $('refs-run').disabled = false;
+});
+
+// ---------- 2. photos de la balade ----------
+$('walk-input').addEventListener('change', (e) => {
+  walkFiles = [...e.target.files].filter(isImage);
+  $('walk-status').textContent = `${walkFiles.length} photo${walkFiles.length > 1 ? 's' : ''} trouvée${walkFiles.length > 1 ? 's' : ''}.`;
+  $('walk-run').disabled = walkFiles.length === 0 || Object.keys(refs).length === 0;
+});
+$('walk-run').addEventListener('click', async () => {
+  const st = $('walk-status'); $('walk-run').disabled = true; results = []; $('grid').innerHTML = '';
+  try {
+    await loadModels(st);
+    let i = 0;
+    for (const f of walkFiles) {
+      st.textContent = `Analyse : ${++i}/${walkFiles.length} — ${f.name}`;
+      try {
+        const canvas = await fileToCanvas(f);
+        const dets = await detectDogs(canvas);
+        const items = [];
+        const targets = dets.length ? dets.map(d => ({ box: d.box, detScore: d.score, fallback: false }))
+                                    : [{ box: wholeBox(canvas), detScore: 0, fallback: true }];
+        for (const d of targets) {
+          const vec = await embedCanvas(cropSquare(canvas, d.box));
+          const scores = Object.entries(refs).map(([name, list]) => ({ name, score: Math.max(...list.map(r => dot(vec, r.vec))) })).sort((a, b) => b.score - a.score);
+          items.push({ box: d.box, detScore: d.detScore, fallback: d.fallback, scores, judged: null });
+        }
+        const preview = document.createElement('canvas');
+        const k = Math.min(1, 640 / canvas.width);
+        preview.width = Math.round(canvas.width * k); preview.height = Math.round(canvas.height * k);
+        preview.getContext('2d').drawImage(canvas, 0, 0, preview.width, preview.height);
+        const r = { file: f, preview, k, items, truth: truthFromWalk(f) };
+        if (r.truth && items.length === 1) items[0].judged = items[0].scores[0].name === r.truth;
+        results.push(r);
+      } catch (err) { results.push({ file: f, error: err.message, items: [] }); }
+      renderAll();
+      await new Promise(r => setTimeout(r)); // laisse respirer l'interface
+    }
+    st.textContent = `✓ ${results.length} photo(s) analysée(s).`;
+  } catch (err) { st.textContent = 'Erreur : ' + err.message; console.error(err); }
+  $('walk-run').disabled = false;
+});
+
+// ---------- affichage ----------
+const thr = () => +$('thr').value / 100, mar = () => +$('mar').value / 100;
+['thr', 'mar'].forEach(id => $(id).addEventListener('input', () => {
+  $('thr-val').textContent = $('thr').value; $('mar-val').textContent = $('mar').value; renderAll();
+}));
+function isSure(it) {
+  const [a, b] = it.scores;
+  return a && a.score >= thr() && (!b || a.score - b.score >= mar());
+}
+function renderAll() {
+  const grid = $('grid'); grid.innerHTML = '';
+  results.forEach((r, ri) => {
+    const card = document.createElement('div'); card.className = 'photo';
+    const c = document.createElement('canvas'); c.width = r.preview ? r.preview.width : 320; c.height = r.preview ? r.preview.height : 200;
+    if (r.preview) {
+      const ctx = c.getContext('2d'); ctx.drawImage(r.preview, 0, 0);
+      r.items.forEach((it, di) => {
+        ctx.lineWidth = 4; ctx.strokeStyle = isSure(it) ? '#3f7a3d' : '#e6743f';
+        const b = it.box, x = b.xmin * r.k, y = b.ymin * r.k;
+        ctx.strokeRect(x, y, (b.xmax - b.xmin) * r.k, (b.ymax - b.ymin) * r.k);
+        ctx.fillStyle = ctx.strokeStyle; ctx.fillRect(x, y, 26, 24);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px sans-serif'; ctx.fillText(di + 1, x + 8, y + 18);
+      });
+    }
+    card.appendChild(c);
+    const body = document.createElement('div'); body.className = 'body';
+    body.innerHTML = `<div class="fname">${relPath(r.file)}${r.truth ? ` — attendu : <strong>${r.truth}</strong>` : ''}</div>`;
+    if (r.error) body.innerHTML += `<div class="det" style="color:var(--bad)">Erreur : ${r.error}</div>`;
+    else if (r.items.length === 0) body.innerHTML += '<div class="det">Aucun chien détecté sur cette photo.</div>';
+    r.items.forEach((it, di) => {
+      const top = it.scores[0], sure = isSure(it);
+      const det = document.createElement('div'); det.className = 'det';
+      const judgedHtml = it.judged === true ? '<span class="judged-ok">✓ bonne réponse</span>' : it.judged === false ? '<span class="judged-bad">✗ mauvaise réponse</span>' : '';
+      det.innerHTML = `<div><strong>${di + 1}. ${top ? top.name : '—'}</strong> <span>${top ? Math.round(top.score * 100) : 0} %</span>
+          <span class="badge ${sure ? 'sure' : 'check'}">${sure ? 'sûr' : 'à vérifier'}</span></div>
+        <div class="cands">${it.scores.slice(0, 3).map(s => `${s.name} ${Math.round(s.score * 100)} %`).join(' · ')}${it.fallback ? '<br>⚠️ chien non détecté : photo entière analysée' : ''}</div>
+        <div class="judge">${judgedHtml || '<button class="yes" data-a="yes">✓ Bon</button><button class="no" data-a="no">✗ Faux</button>'}</div>`;
+      det.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => { it.judged = btn.dataset.a === 'yes'; renderAll(); }));
+      body.appendChild(det);
+    });
+    card.appendChild(body); grid.appendChild(card);
+  });
+  renderSummary();
+}
+function renderSummary() {
+  const all = results.flatMap(r => r.items);
+  const judged = all.filter(i => i.judged !== null);
+  const ok = judged.filter(i => i.judged), ko = judged.filter(i => !i.judged);
+  const avg = (arr) => arr.length ? Math.round(arr.reduce((s, i) => s + i.scores[0].score, 0) / arr.length * 100) + ' %' : '—';
+  const sureWrong = ko.filter(isSure).length, sureTotal = judged.filter(isSure).length;
+  const el = $('summary'); el.style.display = results.length ? 'block' : 'none';
+  el.innerHTML = `<strong>${results.length}</strong> photo(s) · <strong>${all.length}</strong> chien(s) détecté(s) · ${all.filter(isSure).length} marqué(s) « sûr »<br>
+    ${judged.length ? `Jugés : <strong>${ok.length}/${judged.length}</strong> bien reconnus (${Math.round(ok.length / judged.length * 100)} %) — score moyen des bonnes réponses ${avg(ok)}, des mauvaises ${avg(ko)}.
+      Parmi les « sûr » jugés : ${sureTotal - sureWrong}/${sureTotal} corrects.` : '<span style="color:var(--dim)">Clique sur ✓ Bon / ✗ Faux sous chaque chien pour mesurer la fiabilité.</span>'}`;
+}
+// pour les tests automatiques
+window.__test = { get refs() { return refs; }, get results() { return results; } };
+</script>
+</body>
+</html>
