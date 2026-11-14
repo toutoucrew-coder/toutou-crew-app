@@ -6175,7 +6175,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const esc = (t) => escapeHtml(String(t == null ? '' : t));
 
   let tf = null, detector = null, embedder = null;
-  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set(), extra: new Set(), addOpen: false };
+  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set(), extra: new Set(), addOpen: false, exportDir: null, exported: {}, exportMsg: '' };
 
   // ---------- fichiers / images ----------
   const isImage = (f) => IMG_EXT.includes(f.name.split('.').pop().toLowerCase()) && !f.name.startsWith('.');
@@ -6750,8 +6750,10 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (focused) return;
 
     let html = resultsDate() !== logDate() ? `<div class="photos-note" style="color:#c75a1c;font-weight:600;">Ces photos ont été analysées pour le ${esc(fmtDayFr(resultsDate()))}, alors que la date sélectionnée est le ${esc(fmtDayFr(logDate()))}. Relance l'analyse pour cette nouvelle date.</div>` : '';
+    if (state.exportMsg) html += `<div class="photos-note" style="color:var(--warning);font-weight:600;">${esc(state.exportMsg)}</div>`;
     html += `<div class="photos-summary"><strong>${groups.reduce((n, g) => n + g.photos.length, 0)}</strong> photo(s) attribuée(s) à <strong>${groups.length}</strong> client(s)` +
       (pendingPhotos.length ? ` · <strong style="color:#c75a1c;">${pendingPhotos.length} à vérifier</strong>` : '') + '</div>';
+    if (groups.length) html += `<div class="photos-actions" style="margin:-4px 0 12px;"><button type="button" class="photos-btn ghost" data-act="exportall" title="Crée un dossier par client avec les photos à joindre">📁 Préparer tous les dossiers d'envoi</button></div>`;
 
     if (pendingPhotos.length) {
       html += `<div class="photos-group pending"><div class="photos-group-head"><div class="photos-group-title">⚠️ À vérifier</div><div class="photos-group-count">Choisis le bon chien, ou « Ignorer »</div></div>`;
@@ -6802,9 +6804,11 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
           <button type="button" class="tb rm" data-act="rm" data-p="${p.id}" data-c="${esc(g.client.id)}" title="Ce n'est pas le bon chien">✕</button>
           <button type="button" class="tb copy" data-act="copy" data-p="${p.id}" title="Copier la photo (puis coller dans WhatsApp)">⧉</button></div>`).join('')}</div>
         <div class="photos-files">${todoPhotos.length ? `<strong>À joindre :</strong> ${todoPhotos.map(p => esc(p.name)).join(' · ')}` : ''}${todoPhotos.length && sentNames.size ? '<br>' : ''}${g.photos.some(p => sentNames.has(p.name)) ? `Déjà envoyées : ${g.photos.filter(p => sentNames.has(p.name)).map(p => esc(p.name)).join(' · ')}` : ''}</div>
+        ${state.exported[g.client.id] ? `<div class="photos-files" style="color:var(--positive);">📁 Dossier prêt : ${esc(state.exported[g.client.id])}<br><span style="color:var(--text-dim);">Dans la conversation WhatsApp : 📎 → Photos et vidéos → ouvre ce dossier → Cmd + A → Ouvrir.</span></div>` : ''}
         <textarea class="photos-msg" data-c="${esc(g.client.id)}">${esc(m.text)}</textarea>
         <div class="photos-actions">
           <button type="button" class="photos-btn" data-act="wa" data-c="${esc(g.client.id)}" ${phone ? '' : 'disabled'}>${phone ? (allSent ? 'Renvoyer sur WhatsApp' : 'Ouvrir WhatsApp') : 'Pas de numéro'}</button>
+          ${!allSent ? `<button type="button" class="photos-btn ghost" data-act="export" data-c="${esc(g.client.id)}" title="Copie les photos à envoyer dans un dossier de ton ordinateur">📁 Préparer le dossier</button>` : ''}
           ${!allSent ? `<button type="button" class="photos-btn ghost" data-act="marksent" data-c="${esc(g.client.id)}" title="À utiliser si tu les as déjà envoyées toi-même">Marquer comme envoyées</button>` : ''}
           <button type="button" class="photos-btn ghost" data-act="reroll" data-c="${esc(g.client.id)}">🎲 Autre message</button>
         </div>
@@ -6819,6 +6823,40 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     box.innerHTML = html;
   }
 
+  // ---------- dossiers d'envoi : une sous-dossier par client avec les photos à joindre ----------
+  // (WhatsApp ne permet pas de joindre des photos via un lien : on prépare donc les fichiers,
+  // il ne reste qu'à les glisser dans la conversation.)
+  const safeName = (t) => String(t).replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'client';
+  async function exportGroup(g) {
+    const sentNames = sentSet(resultsDate(), g.client.id);
+    const todo = g.photos.filter(p => !sentNames.has(p.name));
+    if (!todo.length) { state.exportMsg = 'Toutes les photos de ce client ont déjà été envoyées.'; return; }
+    if (!state.exportDir) state.exportDir = await window.showDirectoryPicker({ id: 'toutou-photos-envoi', mode: 'readwrite', startIn: 'pictures' });
+    const dayDir = await state.exportDir.getDirectoryHandle(resultsDate(), { create: true });
+    const folder = safeName(`${g.dogNames.join(' & ')} - ${g.client.ownerName}`);
+    const dir = await dayDir.getDirectoryHandle(folder, { create: true });
+    const used = new Set();
+    for (const p of todo) {
+      let name = p.name, n = 1;
+      while (used.has(name)) { const dot = p.name.lastIndexOf('.'); name = dot > 0 ? `${p.name.slice(0, dot)} (${++n})${p.name.slice(dot)}` : `${p.name} (${++n})`; }
+      used.add(name);
+      const fh = await dir.getFileHandle(name, { create: true });
+      const w = await fh.createWritable();
+      await w.write(p.file);
+      await w.close();
+    }
+    state.exported[g.client.id] = `${state.exportDir.name} / ${resultsDate()} / ${folder}`;
+    state.exportMsg = '';
+  }
+  async function exportGroups(groups) {
+    if (!window.showDirectoryPicker) {
+      state.exportMsg = 'Cette fonction demande Chrome ou Edge sur ordinateur.';
+      return renderResults();
+    }
+    try { for (const g of groups) await exportGroup(g); }
+    catch (err) { if (err && err.name === 'AbortError') return; state.exportMsg = 'Impossible d\'enregistrer les photos : ' + errText(err); console.error(err); }
+    renderResults();
+  }
   function markSent(cid, names, date) {
     const entry = ensureLog(date || resultsDate(), cid);
     entry.sent = [...new Set([...entry.sent, ...names])];
@@ -6881,6 +6919,11 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(m.text)}`, '_blank');
       markSent(g.client.id, g.photos.map(p => p.name));
       renderResults();
+    } else if (act === 'export') {
+      const g = buildGroups().find(x => x.client.id === btn.dataset.c);
+      if (g) await exportGroups([g]);
+    } else if (act === 'exportall') {
+      await exportGroups(buildGroups());
     } else if (act === 'marksent') {
       const g = buildGroups().find(x => x.client.id === btn.dataset.c);
       if (g) markSent(g.client.id, g.photos.map(p => p.name));
