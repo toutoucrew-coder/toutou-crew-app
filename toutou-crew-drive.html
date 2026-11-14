@@ -183,7 +183,7 @@
   /* Nav horizontale (pill tabs) par défaut, façon site */
   .tabs {
     display: flex;
-    gap: 32px;
+    gap: 10px;
   }
   .tab {
     display: flex;
@@ -653,6 +653,55 @@
     color: #e6743f;
     margin-left: 6px;
   }
+
+  /* ---- Photos de balade (reconnaissance des chiens) ---- */
+  .photos-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+  .photos-card-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .photos-note { font-size: 0.78rem; color: var(--text-dim); margin: 2px 0 10px; line-height: 1.45; }
+  .photos-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .photos-btn { display: inline-flex; align-items: center; background: var(--accent); color: var(--btn-text); border: none; border-radius: 10px; padding: 8px 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .photos-btn:hover { background: var(--accent-soft); }
+  .photos-btn.ghost { background: none; color: var(--text-dim); border: 1px solid var(--line); }
+  .photos-btn.ghost:hover { background: var(--surface-2); }
+  .photos-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .photos-btn.small { padding: 5px 10px; font-size: 0.74rem; border-radius: 8px; }
+  .photos-card input[type=file] { display: none; }
+  .photos-status { font-size: 0.8rem; margin-top: 10px; min-height: 1.1em; color: var(--text-dim); }
+  .photos-status .bad { color: var(--warning); }
+  .photos-dog-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .photos-dog-row:first-child { border-top: none; }
+  .photos-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: var(--surface-2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 1.1rem; }
+  .photos-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .photos-dog-main { flex: 1; min-width: 0; }
+  .photos-dog-name { font-weight: 600; font-size: 0.86rem; }
+  .photos-dog-meta { font-size: 0.74rem; color: var(--text-dim); }
+  .photos-dog-meta.ok { color: var(--positive); }
+  .photos-dog-meta.warn { color: var(--warning); }
+  .photos-sliders { margin-top: 10px; font-size: 0.78rem; color: var(--text-dim); }
+  .photos-sliders label { display: block; margin-top: 6px; }
+  .photos-sliders input[type=range] { width: 100%; }
+  .photos-summary { font-size: 0.82rem; margin: 4px 2px 12px; color: var(--text-dim); }
+  .photos-group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+  .photos-group.pending { border-color: #e6743f; background: #fdf1e7; }
+  .photos-group.sent { opacity: 0.75; }
+  .photos-group-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .photos-group-title { font-weight: 700; font-size: 0.92rem; }
+  .photos-group-count { font-size: 0.76rem; color: var(--text-dim); }
+  .photos-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin: 10px 0 6px; }
+  .photos-thumb { position: relative; border-radius: 10px; overflow: hidden; background: var(--surface-2); aspect-ratio: 1; }
+  .photos-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photos-thumb .tb { position: absolute; top: 4px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; font-size: 0.72rem; cursor: pointer; line-height: 22px; padding: 0; }
+  .photos-thumb .tb.copy { right: 4px; }
+  .photos-thumb .tb.rm { left: 4px; }
+  .photos-files { font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 8px; }
+  .photos-msg { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 0.84rem; background: var(--bg); color: var(--text); }
+  .photos-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  .photos-sent-tag { font-size: 0.76rem; color: var(--positive); font-weight: 600; }
+  .photos-pending-item { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+  .photos-pending-item img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+  .photos-pending-item select { flex: 1; min-width: 0; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 0.82rem; font-family: inherit; }
+  .photos-pending-info { flex: 1; min-width: 0; font-size: 0.76rem; color: var(--text-dim); }
+  .photos-pending-info .fn { word-break: break-all; margin-bottom: 4px; }
 
   .absence-card {
     background: var(--surface);
@@ -1458,6 +1507,10 @@
         <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         <span>Historique</span>
       </div>
+      <div class="tab" data-panel="photos">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.2-2h6.2l1.2 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg>
+        <span>Photos</span>
+      </div>
       <div class="tab" data-panel="reglages">
         <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.96 17.34a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.66 8.96a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.04Z"/></svg>
         <span>Réglages</span>
@@ -1589,6 +1642,41 @@
       <div class="note" style="margin-bottom:14px;">Le CA affiché ici est celui réellement <strong>encaissé</strong> pendant chaque période (pas la date de la balade) — c'est le chiffre à recopier tel quel sur le site de l'Urssaf.</div>
       <div id="urssaf-list"></div>
     </div>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="panel" id="panel-photos">
+    <div class="page-title">Photos de balade</div>
+
+    <div class="photos-card">
+      <div class="photos-card-title">1 · Empreintes des chiens</div>
+      <div class="photos-note">Pour reconnaître un chien, l'appli garde une « empreinte » calculée à partir de sa photo de profil (fiche client) et, si tu veux, de quelques photos de plus (autres angles, de loin). Les photos elles-mêmes ne sont ni envoyées ni stockées : seule l'empreinte (quelques Ko) est enregistrée dans ton Drive.</div>
+      <div id="photos-dogs"></div>
+      <div class="photos-row" style="margin-top:10px;">
+        <button type="button" class="photos-btn" id="photos-compute">Calculer les empreintes manquantes</button>
+      </div>
+      <div class="photos-status" id="photos-refs-status"></div>
+    </div>
+
+    <div class="photos-card">
+      <div class="photos-card-title">2 · Photos de la balade</div>
+      <div class="photos-note">Choisis le dossier qui contient les photos du jour. L'analyse se fait dans ton navigateur (rien n'est envoyé). Utilise Chrome ou Edge sur ordinateur.</div>
+      <div class="photos-row">
+        <label class="photos-btn" for="photos-walk-input">Choisir un dossier</label>
+        <input type="file" id="photos-walk-input" webkitdirectory multiple>
+        <button type="button" class="photos-btn" id="photos-walk-run" disabled>Analyser les photos</button>
+      </div>
+      <details class="photos-sliders">
+        <summary>Réglages de la reconnaissance</summary>
+        <label>Confiance minimale : <strong id="photos-thr-val">55</strong> %
+          <input type="range" id="photos-thr" min="20" max="95" value="55"></label>
+        <label>Écart minimal avec le 2e chien : <strong id="photos-mar-val">5</strong> points
+          <input type="range" id="photos-mar" min="0" max="30" value="5"></label>
+      </details>
+      <div class="photos-status" id="photos-walk-status"></div>
+    </div>
+
+    <div id="photos-results"></div>
   </div>
 
   <!-- REGLAGES -->
@@ -5922,6 +6010,506 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
 
 // L'app démarre via startApp() après connexion Google (voir l'écran de
 // connexion en haut du fichier), pas directement ici.
+</script>
+
+<script>
+// =====================================================================
+// PHOTOS DE BALADE : reconnaissance des chiens (tout se passe dans le
+// navigateur, via transformers.js). On ne stocke que de petites
+// "empreintes" par chien (dog.embeds), jamais les photos.
+// =====================================================================
+(function () {
+  const TF_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+  const MODEL = 'Xenova/dinov2-small';
+  const MAX_EXTRA_REFS = 6;
+  const IMG_EXT = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => escapeHtml(String(t == null ? '' : t));
+
+  let tf = null, detector = null, embedder = null;
+  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1 };
+
+  // ---------- fichiers / images ----------
+  const isImage = (f) => IMG_EXT.includes(f.name.split('.').pop().toLowerCase()) && !f.name.startsWith('.');
+  const errText = (e) => (e && e.message) ? e.message : String(e);
+  const scriptPromises = {};
+  const loadScript = (src) => scriptPromises[src] || (scriptPromises[src] = new Promise((res, rej) => {
+    const el = document.createElement('script');
+    el.src = src; el.onload = res; el.onerror = () => rej(new Error('script indisponible'));
+    document.head.appendChild(el);
+  }));
+  // HEIC (iPhone) : décodage natif si possible, sinon heic-to, sinon heic2any.
+  async function heicToJpeg(file) {
+    const errors = [];
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/heic-to@1.6.7/dist/iife/heic-to.js');
+      const fn = typeof HeicTo === 'function' ? HeicTo : HeicTo.heicTo;
+      return await fn({ blob: file, type: 'image/jpeg', quality: 0.9 });
+    } catch (e) { errors.push('heic-to : ' + errText(e)); }
+    try {
+      await loadScript('https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js');
+      const out = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+      return Array.isArray(out) ? out[0] : out;
+    } catch (e) { errors.push('heic2any : ' + errText(e)); }
+    throw new Error('photo HEIC illisible (' + errors.join(' / ') + ')');
+  }
+  async function fileToBitmap(file) {
+    const opts = { imageOrientation: 'from-image' };
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'heic' && ext !== 'heif') return createImageBitmap(file, opts);
+    try { return await createImageBitmap(file, opts); } catch (e) { /* pas de décodage natif */ }
+    return createImageBitmap(await heicToJpeg(file), opts);
+  }
+  function bitmapToCanvas(bmp, maxSide) {
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    if (bmp.close) bmp.close();
+    return c;
+  }
+  const fileToCanvas = async (file, maxSide = 1280) => bitmapToCanvas(await fileToBitmap(file), maxSide);
+  async function dataUrlToCanvas(url, maxSide = 1280) {
+    const blob = await (await fetch(url)).blob();
+    return bitmapToCanvas(await createImageBitmap(blob), maxSide);
+  }
+
+  // ---------- modèles ----------
+  async function loadModels(statusEl) {
+    if (!tf) {
+      statusEl.textContent = 'Chargement de la bibliothèque d\'IA…';
+      tf = await import(TF_URL);
+      tf.env.allowLocalModels = false;
+    }
+    const progress = (p) => {
+      if (p.status === 'progress' && p.file) statusEl.textContent = `Téléchargement du modèle (${p.file.split('/').pop()}) : ${Math.round(p.progress || 0)} %`;
+    };
+    if (!detector) {
+      statusEl.textContent = 'Chargement du détecteur de chiens… (la toute première fois : environ 1 minute)';
+      detector = await tf.pipeline('object-detection', 'Xenova/yolos-tiny', { progress_callback: progress });
+    }
+    if (!embedder) {
+      statusEl.textContent = 'Chargement du modèle de reconnaissance…';
+      embedder = await tf.pipeline('image-feature-extraction', MODEL, { progress_callback: progress });
+    }
+  }
+  const canvasToRaw = (canvas) => new Promise((res, rej) =>
+    canvas.toBlob(b => b ? tf.RawImage.fromBlob(b).then(res, rej) : rej(new Error('canvas vide')), 'image/jpeg', 0.92));
+
+  async function detectDogs(canvas) {
+    const raw = await canvasToRaw(canvas);
+    let dets = (await detector(raw, { threshold: 0.4 })).filter(d => d.label === 'dog');
+    if (!dets.length) dets = (await detector(raw, { threshold: 0.2 })).filter(d => d.label === 'dog'); // chien au loin
+    return dets.sort((a, b) => b.score - a.score);
+  }
+  function cropSquare(canvas, box, margin = 0.08) {
+    const w = box.xmax - box.xmin, h = box.ymax - box.ymin;
+    const side = Math.min(Math.max(w, h) * (1 + margin * 2), Math.min(canvas.width, canvas.height));
+    const cx = (box.xmin + box.xmax) / 2, cy = (box.ymin + box.ymax) / 2;
+    const x = Math.min(Math.max(0, cx - side / 2), canvas.width - side);
+    const y = Math.min(Math.max(0, cy - side / 2), canvas.height - side);
+    const out = document.createElement('canvas');
+    out.width = out.height = Math.round(Math.max(224, Math.min(side, 448)));
+    out.getContext('2d').drawImage(canvas, x, y, side, side, 0, 0, out.width, out.height);
+    return out;
+  }
+  const wholeBox = (c) => ({ xmin: 0, ymin: 0, xmax: c.width, ymax: c.height });
+  const boxArea = (b) => (b.xmax - b.xmin) * (b.ymax - b.ymin);
+  function l2(v) { let n = 0; for (const x of v) n += x * x; n = Math.sqrt(n) || 1; return v.map(x => x / n); }
+  async function embedCanvas(canvas) {
+    const out = await embedder(await canvasToRaw(canvas));
+    const dims = out.dims, data = out.data;
+    if (dims.length === 3) { // [1, jetons, dim] : jeton CLS + moyenne des patchs
+      const tokens = dims[1], dim = dims[2];
+      const cls = Array.from(data.slice(0, dim));
+      const mean = new Array(dim).fill(0);
+      for (let t = 1; t < tokens; t++) for (let d = 0; d < dim; d++) mean[d] += data[t * dim + d] / (tokens - 1);
+      return l2([...l2(cls), ...l2(mean)]);
+    }
+    return l2(Array.from(data));
+  }
+  const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+
+  // ---------- empreintes : compactage (int16 en base64, ~2 Ko par photo) ----------
+  function packVec(v) {
+    let m = 0; for (const x of v) m = Math.max(m, Math.abs(x));
+    const sc = (m / 32767) || 1;
+    const i16 = new Int16Array(v.length);
+    for (let i = 0; i < v.length; i++) i16[i] = Math.round(v[i] / sc);
+    const bytes = new Uint8Array(i16.buffer);
+    let bin = ''; for (let i = 0; i < bytes.length; i += 4096) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 4096));
+    return sc.toPrecision(7) + ':' + btoa(bin);
+  }
+  function unpackVec(str) {
+    const k = str.indexOf(':');
+    const sc = parseFloat(str.slice(0, k));
+    const bin = atob(str.slice(k + 1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const i16 = new Int16Array(bytes.buffer);
+    const out = new Float32Array(i16.length);
+    for (let i = 0; i < i16.length; i++) out[i] = i16[i] * sc;
+    return out;
+  }
+  function hashStr(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h >>> 0); }
+
+  async function embedDogFromCanvas(canvas) {
+    const dets = await detectDogs(canvas);
+    const best = dets.sort((a, b) => boxArea(b.box) - boxArea(a.box))[0];
+    return embedCanvas(cropSquare(canvas, best ? best.box : wholeBox(canvas)));
+  }
+
+  // ---------- liste des chiens ----------
+  function activeDogs() {
+    const list = [];
+    (clients || []).filter(c => !c.archived).forEach(c => (c.dogs || []).forEach(d => list.push({ client: c, dog: d, key: c.id + '|' + d.id })));
+    return list.sort((a, b) => a.dog.name.localeCompare(b.dog.name));
+  }
+  function dogEmbedInfo(dog) {
+    const e = dog.embeds && dog.embeds.model === MODEL ? dog.embeds : null;
+    const items = e ? e.items : [];
+    const profile = items.find(i => i.k === 'p');
+    const profileStale = dog.photo ? (!profile || profile.h !== hashStr(dog.photo)) : false;
+    const extra = items.filter(i => i.k === 'x').length;
+    return { items, profile, profileStale, extra, usable: items.length > 0 };
+  }
+  function renderDogs() {
+    const list = activeDogs();
+    const box = $('photos-dogs');
+    if (!list.length) { box.innerHTML = '<div class="photos-note">Aucun chien dans les fiches clients.</div>'; return; }
+    box.innerHTML = list.map(({ client, dog, key }) => {
+      const info = dogEmbedInfo(dog);
+      let meta, cls = '';
+      if (info.usable && !info.profileStale) { meta = `✓ ${info.items.length} empreinte${info.items.length > 1 ? 's' : ''}`; cls = 'ok'; }
+      else if (info.usable) { meta = `${info.items.length} empreinte(s) · la photo de profil a changé, à recalculer`; cls = 'warn'; }
+      else if (dog.photo) { meta = 'Pas encore d\'empreinte (photo de profil prête)'; cls = 'warn'; }
+      else { meta = 'Pas de photo de profil : ajoute-en une dans la fiche ou ici'; cls = 'warn'; }
+      return `<div class="photos-dog-row">
+        <div class="photos-avatar">${dog.photo ? `<img src="${dog.photo}" alt="">` : '🐶'}</div>
+        <div class="photos-dog-main">
+          <div class="photos-dog-name">${esc(dog.name)} <span style="font-weight:400;color:var(--text-dim);">· ${esc(client.ownerName)}</span></div>
+          <div class="photos-dog-meta ${cls}">${meta}${info.extra ? ` (dont ${info.extra} photo${info.extra > 1 ? 's' : ''} ajoutée${info.extra > 1 ? 's' : ''})` : ''}</div>
+        </div>
+        <label class="photos-btn ghost small" for="photos-ref-${esc(key)}" title="Ajouter des photos de référence (autres angles, de loin…)">+ Photos</label>
+        <input type="file" id="photos-ref-${esc(key)}" data-ref-key="${esc(key)}" accept="image/*,.heic,.heif" multiple>
+        ${info.extra ? `<button type="button" class="photos-btn ghost small" data-clear-key="${esc(key)}" title="Retirer les photos ajoutées">✕</button>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  async function computeMissing() {
+    const st = $('photos-refs-status'), btn = $('photos-compute');
+    btn.disabled = true;
+    try {
+      const todo = activeDogs().filter(({ dog }) => dog.photo && (!dogEmbedInfo(dog).profile || dogEmbedInfo(dog).profileStale));
+      if (!todo.length) { st.textContent = 'Toutes les empreintes sont à jour.'; return; }
+      await loadModels(st);
+      let i = 0, failed = [];
+      for (const { dog } of todo) {
+        st.textContent = `Empreintes : ${++i}/${todo.length} (${dog.name})`;
+        try {
+          const vec = await embedDogFromCanvas(await dataUrlToCanvas(dog.photo));
+          const keep = dogEmbedInfo(dog).items.filter(it => it.k === 'x');
+          dog.embeds = { model: MODEL, items: [{ k: 'p', h: hashStr(dog.photo), v: packVec(vec) }, ...keep] };
+        } catch (err) { failed.push(`${dog.name} (${errText(err)})`); console.error(err); }
+        await new Promise(r => setTimeout(r));
+      }
+      await saveClients();
+      renderDogs();
+      st.innerHTML = `✓ ${todo.length - failed.length} empreinte(s) enregistrée(s).` + (failed.length ? `<br><span class="bad">Échec : ${esc(failed.join(' ; '))}</span>` : '');
+    } catch (err) { st.innerHTML = `<span class="bad">Erreur : ${esc(errText(err))}</span>`; console.error(err); }
+    btn.disabled = false;
+  }
+
+  async function addRefPhotos(key, files) {
+    const st = $('photos-refs-status');
+    const found = activeDogs().find(x => x.key === key);
+    if (!found) return;
+    const { dog } = found;
+    const imgs = [...files].filter(isImage);
+    if (!imgs.length) return;
+    try {
+      await loadModels(st);
+      let i = 0; const failed = [];
+      for (const f of imgs) {
+        st.textContent = `Empreinte ${++i}/${imgs.length} pour ${dog.name}…`;
+        try {
+          const vec = await embedDogFromCanvas(await fileToCanvas(f));
+          const cur = dogEmbedInfo(dog).items;
+          const items = [...cur, { k: 'x', v: packVec(vec) }];
+          while (items.filter(it => it.k === 'x').length > MAX_EXTRA_REFS) items.splice(items.findIndex(it => it.k === 'x'), 1);
+          dog.embeds = { model: MODEL, items };
+        } catch (err) { failed.push(`${f.name} (${errText(err)})`); console.error(err); }
+      }
+      await saveClients();
+      renderDogs();
+      st.innerHTML = `✓ Photos ajoutées pour ${esc(dog.name)}.` + (failed.length ? `<br><span class="bad">Ignorée(s) : ${esc(failed.join(' ; '))}</span>` : '');
+    } catch (err) { st.innerHTML = `<span class="bad">Erreur : ${esc(errText(err))}</span>`; console.error(err); }
+  }
+
+  $('photos-compute').addEventListener('click', computeMissing);
+  $('photos-dogs').addEventListener('change', (ev) => {
+    const inp = ev.target.closest('input[data-ref-key]');
+    if (inp && inp.files.length) { addRefPhotos(inp.dataset.refKey, inp.files).then(() => { inp.value = ''; }); }
+  });
+  $('photos-dogs').addEventListener('click', async (ev) => {
+    const b = ev.target.closest('[data-clear-key]');
+    if (!b) return;
+    const found = activeDogs().find(x => x.key === b.dataset.clearKey);
+    if (!found || !found.dog.embeds) return;
+    found.dog.embeds.items = found.dog.embeds.items.filter(it => it.k !== 'x');
+    await saveClients();
+    renderDogs();
+  });
+
+  // ---------- analyse du dossier du jour ----------
+  const thr = () => +$('photos-thr').value / 100, mar = () => +$('photos-mar').value / 100;
+  function isSure(it) {
+    const [a, b] = it.scores;
+    return !!a && a.score >= thr() && (!b || a.score - b.score >= mar());
+  }
+  function applyAuto() { // (re)calcule l'attribution automatique, sans écraser les choix manuels
+    state.photos.forEach(p => p.items.forEach(it => { if (!it.manual) it.choice = isSure(it) ? it.scores[0].key : null; }));
+  }
+  ['photos-thr', 'photos-mar'].forEach(id => $(id).addEventListener('input', () => {
+    $('photos-thr-val').textContent = $('photos-thr').value; $('photos-mar-val').textContent = $('photos-mar').value;
+    applyAuto(); renderResults();
+  }));
+
+  $('photos-walk-input').addEventListener('change', (ev) => {
+    state.files = [...ev.target.files].filter(isImage).sort((a, b) => a.name.localeCompare(b.name));
+    $('photos-walk-status').textContent = `${state.files.length} photo${state.files.length > 1 ? 's' : ''} trouvée${state.files.length > 1 ? 's' : ''}.`;
+    $('photos-walk-run').disabled = state.files.length === 0;
+  });
+
+  function makeThumb(canvas, items) {
+    const k = Math.min(1, 360 / Math.max(canvas.width, canvas.height));
+    const t = document.createElement('canvas');
+    t.width = Math.round(canvas.width * k); t.height = Math.round(canvas.height * k);
+    const ctx = t.getContext('2d');
+    ctx.drawImage(canvas, 0, 0, t.width, t.height);
+    if (items.length > 1) {
+      items.forEach((it, i) => {
+        ctx.lineWidth = 3; ctx.strokeStyle = '#e6743f';
+        const b = it.box, x = b.xmin * k, y = b.ymin * k;
+        ctx.strokeRect(x, y, (b.xmax - b.xmin) * k, (b.ymax - b.ymin) * k);
+        ctx.fillStyle = '#e6743f'; ctx.fillRect(x, y, 22, 20);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(i + 1, x + 7, y + 15);
+      });
+    }
+    return t.toDataURL('image/jpeg', 0.72);
+  }
+
+  async function analyse() {
+    const st = $('photos-walk-status'), btn = $('photos-walk-run');
+    const refs = activeDogs().map(({ dog, key }) => ({ key, vecs: dogEmbedInfo(dog).items.map(i => unpackVec(i.v)) })).filter(r => r.vecs.length);
+    if (!refs.length) { st.innerHTML = '<span class="bad">Aucune empreinte de chien : calcule-les d\'abord (étape 1).</span>'; return; }
+    btn.disabled = true; state.photos = []; state.msgs = {}; state.sent = {}; renderResults();
+    try {
+      await loadModels(st);
+      let i = 0;
+      for (const f of state.files) {
+        st.textContent = `Analyse : ${++i}/${state.files.length} — ${f.name}`;
+        const photo = { id: 'p' + i, file: f, name: f.name, items: [], thumb: null, error: null };
+        try {
+          const canvas = await fileToCanvas(f);
+          const dets = await detectDogs(canvas);
+          const targets = dets.length ? dets.map(d => ({ box: d.box, fallback: false })) : [{ box: wholeBox(canvas), fallback: true }];
+          for (const d of targets) {
+            const vec = await embedCanvas(cropSquare(canvas, d.box));
+            const scores = refs.map(r => ({ key: r.key, score: Math.max(...r.vecs.map(v => dot(vec, v))) })).sort((a, b) => b.score - a.score);
+            photo.items.push({ box: d.box, fallback: d.fallback, scores, choice: null, manual: false });
+          }
+          photo.thumb = makeThumb(canvas, photo.items);
+        } catch (err) { photo.error = errText(err); console.error(f.name, err); }
+        state.photos.push(photo);
+        applyAuto();
+        renderResults();
+        await new Promise(r => setTimeout(r));
+      }
+      const ok = state.photos.filter(p => !p.error).length;
+      st.innerHTML = `✓ ${ok} photo(s) analysée(s)` + (ok < state.photos.length ? ` · <span class="bad">${state.photos.length - ok} illisible(s)</span>` : '') + '.';
+    } catch (err) { st.innerHTML = `<span class="bad">Erreur : ${esc(errText(err))}</span>`; console.error(err); }
+    btn.disabled = false;
+  }
+  $('photos-walk-run').addEventListener('click', analyse);
+
+  // ---------- messages "voici les photos de la journée" ----------
+  const FIRST_VOWEL = /^[aeiouyàâäéèêëîïôöùûüh]/i;
+  const joinNames = (n) => n.length <= 1 ? (n[0] || '') : n.slice(0, -1).join(', ') + ' et ' + n[n.length - 1];
+  const dePhrase = (n) => (FIRST_VOWEL.test(n[0] || '') ? "d'" : 'de ') + joinNames(n);
+  const VARIANTS = [
+    (o, n, hi) => `${hi} ${o} ! Voici les photos de la journée ${dePhrase(n)} 🐾`,
+    (o, n) => `Coucou ${o} ! Voici les photos de la journée avec ${joinNames(n)} 📸`,
+    (o, n) => `Hello ${o} ! Je vous envoie les photos de la journée ${dePhrase(n)} 🐶`,
+    (o, n, hi) => `${hi} ${o}, voici un petit aperçu en photos de la journée ${dePhrase(n)} 🌳`,
+    (o, n) => `Salut ${o} ! Les photos de la journée avec ${joinNames(n)}, c'est par ici 📷`,
+    (o, n, hi) => `${hi} ${o}, voici les photos de la journée ${dePhrase(n)} 🐕`,
+    (o, n) => `Petit récap en images de la journée ${dePhrase(n)}, ${o} ! 📸`,
+    (o, n) => `${o}, les photos de la journée sont arrivées ! 🐾 Voici ${joinNames(n)} en balade.`,
+    (o, n) => `Coucou ${o} ! Je vous partage les photos de la journée ${dePhrase(n)} 🌿`,
+    (o, n, hi) => `${hi} ${o} ! Voici quelques photos de la journée avec ${joinNames(n)} 🐶`,
+  ];
+  const greeting = () => new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
+  const ownerFirstName = (c) => (c.ownerName || '').trim().split(/\s+/)[0] || '';
+  function pickVariant(exclude) {
+    let i; do { i = Math.floor(Math.random() * VARIANTS.length); } while ((i === state.lastVariant || i === exclude) && VARIANTS.length > 2);
+    state.lastVariant = i; return i;
+  }
+  function buildMessage(group, idx) {
+    return VARIANTS[idx](ownerFirstName(group.client), group.dogNames, greeting());
+  }
+
+  // ---------- regroupement par client ----------
+  function candidateLabel(key) {
+    const [cid, did] = key.split('|');
+    const c = getClientById(cid), d = c && getDogById(c, did);
+    return d ? `${d.name} (${ownerFirstName(c)})` : key;
+  }
+  function buildGroups() {
+    const map = new Map();
+    state.photos.forEach(p => p.items.forEach(it => {
+      if (!it.choice || it.choice === 'skip') return;
+      const [cid, did] = it.choice.split('|');
+      const client = getClientById(cid); if (!client) return;
+      const dog = getDogById(client, did); if (!dog) return;
+      if (!map.has(cid)) map.set(cid, { client, dogIds: new Set(), photos: [] });
+      const g = map.get(cid);
+      g.dogIds.add(did);
+      if (!g.photos.includes(p)) g.photos.push(p);
+    }));
+    return [...map.values()].map(g => {
+      g.dogNames = (g.client.dogs || []).filter(d => g.dogIds.has(d.id)).map(d => d.name);
+      return g;
+    }).sort((a, b) => ownerFirstName(a.client).localeCompare(ownerFirstName(b.client)));
+  }
+  function groupMessage(g) {
+    const cid = g.client.id, names = g.dogNames.join('|');
+    let m = state.msgs[cid];
+    if (!m) m = state.msgs[cid] = { idx: pickVariant(), text: '', names: '', edited: false };
+    if (!m.edited && m.names !== names) { m.text = buildMessage(g, m.idx); m.names = names; }
+    return m;
+  }
+
+  function renderResults() {
+    const box = $('photos-results');
+    if (!state.photos.length) { box.innerHTML = ''; return; }
+    const groups = buildGroups();
+    const pendingPhotos = state.photos.filter(p => !p.error && p.items.some(it => !it.choice));
+    const errors = state.photos.filter(p => p.error);
+    const allKeys = activeDogs().filter(x => dogEmbedInfo(x.dog).usable).map(x => x.key);
+    // ne reconstruit pas l'interface pendant qu'on saisit un message
+    const focused = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('photos-msg');
+    if (focused) return;
+
+    let html = `<div class="photos-summary"><strong>${groups.reduce((n, g) => n + g.photos.length, 0)}</strong> photo(s) attribuée(s) à <strong>${groups.length}</strong> client(s)` +
+      (pendingPhotos.length ? ` · <strong style="color:#c75a1c;">${pendingPhotos.length} à vérifier</strong>` : '') + '</div>';
+
+    if (pendingPhotos.length) {
+      html += `<div class="photos-group pending"><div class="photos-group-head"><div class="photos-group-title">⚠️ À vérifier</div><div class="photos-group-count">Choisis le bon chien, ou « Ignorer »</div></div>`;
+      pendingPhotos.forEach(p => {
+        p.items.forEach((it, ii) => {
+          if (it.choice) return;
+          const top3 = it.scores.slice(0, 3);
+          const rest = allKeys.filter(k => !top3.some(t => t.key === k));
+          html += `<div class="photos-pending-item">
+            <img src="${p.thumb}" alt="">
+            <div class="photos-pending-info"><div class="fn">${esc(p.name)}${p.items.length > 1 ? ` — chien n°${ii + 1}` : ''}</div>
+              ${it.fallback ? 'Chien non détecté (photo entière analysée)' : 'Reconnaissance incertaine'}
+              <select data-p="${p.id}" data-i="${ii}">
+                <option value="">Choisir…</option>
+                ${top3.map(t => `<option value="${esc(t.key)}">${esc(candidateLabel(t.key))} — ${Math.round(t.score * 100)} %</option>`).join('')}
+                ${rest.length ? `<option disabled>──────────</option>${rest.map(k => `<option value="${esc(k)}">${esc(candidateLabel(k))}</option>`).join('')}` : ''}
+                <option disabled>──────────</option>
+                <option value="skip">Ignorer cette photo</option>
+              </select></div></div>`;
+        });
+      });
+      html += '</div>';
+    }
+
+    groups.forEach(g => {
+      const m = groupMessage(g);
+      const phone = formatPhoneForWhatsApp(g.client.phonePrimary || g.client.conjointPhone);
+      const sent = !!state.sent[g.client.id];
+      html += `<div class="photos-group${sent ? ' sent' : ''}" data-cid="${esc(g.client.id)}">
+        <div class="photos-group-head">
+          <div class="photos-group-title">🐶 ${esc(g.dogNames.join(' & '))} · 👤 ${esc(g.client.ownerName)}</div>
+          <div class="photos-group-count">${g.photos.length} photo${g.photos.length > 1 ? 's' : ''}${sent ? ' · <span class="photos-sent-tag">✓ WhatsApp ouvert</span>' : ''}</div>
+        </div>
+        <div class="photos-thumbs">${g.photos.map(p => `<div class="photos-thumb"><img src="${p.thumb}" alt="${esc(p.name)}" title="${esc(p.name)}">
+          <button type="button" class="tb rm" data-act="rm" data-p="${p.id}" data-c="${esc(g.client.id)}" title="Ce n'est pas le bon chien">✕</button>
+          <button type="button" class="tb copy" data-act="copy" data-p="${p.id}" title="Copier la photo (puis coller dans WhatsApp)">⧉</button></div>`).join('')}</div>
+        <div class="photos-files">${g.photos.map(p => esc(p.name)).join(' · ')}</div>
+        <textarea class="photos-msg" data-c="${esc(g.client.id)}">${esc(m.text)}</textarea>
+        <div class="photos-actions">
+          <button type="button" class="photos-btn" data-act="wa" data-c="${esc(g.client.id)}" ${phone ? '' : 'disabled'}>${phone ? 'Ouvrir WhatsApp' : 'Pas de numéro'}</button>
+          <button type="button" class="photos-btn ghost" data-act="reroll" data-c="${esc(g.client.id)}">🎲 Autre message</button>
+        </div>
+      </div>`;
+    });
+
+    if (errors.length) {
+      html += `<div class="photos-note"><span style="color:var(--warning);font-weight:600;">${errors.length} photo(s) illisible(s) ignorée(s) :</span><br>${errors.map(p => esc(p.name + ' — ' + p.error)).join('<br>')}</div>`;
+    }
+    box.innerHTML = html;
+  }
+
+  const resultsBox = $('photos-results');
+  resultsBox.addEventListener('change', (ev) => {
+    const sel = ev.target.closest('select[data-p]');
+    if (!sel || !sel.value) return;
+    const p = state.photos.find(x => x.id === sel.dataset.p);
+    if (!p) return;
+    const it = p.items[+sel.dataset.i];
+    it.choice = sel.value; it.manual = true;
+    renderResults();
+  });
+  resultsBox.addEventListener('input', (ev) => {
+    const ta = ev.target.closest('textarea.photos-msg');
+    if (!ta) return;
+    const m = state.msgs[ta.dataset.c];
+    if (m) { m.text = ta.value; m.edited = true; }
+  });
+  resultsBox.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === 'rm') { // pas le bon chien : retour dans "À vérifier"
+      const p = state.photos.find(x => x.id === btn.dataset.p);
+      if (p) p.items.forEach(it => { if (it.choice && it.choice.split('|')[0] === btn.dataset.c) { it.choice = null; it.manual = true; } });
+      renderResults();
+    } else if (act === 'copy') {
+      const p = state.photos.find(x => x.id === btn.dataset.p);
+      if (!p) return;
+      const old = btn.textContent;
+      try {
+        const c = await fileToCanvas(p.file, 1600);
+        const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.textContent = '✓';
+      } catch (err) { console.error(err); btn.textContent = '!'; }
+      setTimeout(() => { btn.textContent = old; }, 1200);
+    } else if (act === 'reroll') {
+      const m = state.msgs[btn.dataset.c];
+      if (!m) return;
+      m.idx = pickVariant(m.idx); m.edited = false; m.names = '';
+      renderResults();
+    } else if (act === 'wa') {
+      const g = buildGroups().find(x => x.client.id === btn.dataset.c);
+      if (!g) return;
+      const phone = formatPhoneForWhatsApp(g.client.phonePrimary || g.client.conjointPhone);
+      if (!phone) return;
+      const m = groupMessage(g);
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(m.text)}`, '_blank');
+      state.sent[g.client.id] = true;
+      renderResults();
+    }
+  });
+
+  document.querySelector('.tab[data-panel="photos"]').addEventListener('click', renderDogs);
+  window.__photos = { state, packVec, unpackVec, VARIANTS, buildMessage, renderDogs, renderResults };
+})();
 </script>
 </body>
 </html>
