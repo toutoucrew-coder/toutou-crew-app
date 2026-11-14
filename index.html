@@ -725,6 +725,10 @@
   .photos-pending-item img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
   .photos-pending-item select { flex: 1; min-width: 0; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 0.82rem; font-family: inherit; }
   .photos-pending-info { flex: 1; min-width: 0; font-size: 0.76rem; color: var(--text-dim); }
+  .photos-pending-row { margin-top: 8px; font-size: 0.8rem; }
+  .photos-pending-row.ok { color: var(--positive); font-weight: 600; }
+  .photos-pending-row .dim { color: var(--text-dim); font-weight: 400; }
+  .photos-pending-row select { width: 100%; margin-top: 4px; }
   .photos-pending-info .fn { word-break: break-all; margin-bottom: 4px; }
 
   .absence-card {
@@ -6242,7 +6246,22 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     const raw = await canvasToRaw(canvas);
     let dets = (await detector(raw, { threshold: 0.4 })).filter(d => d.label === 'dog');
     if (!dets.length) dets = (await detector(raw, { threshold: 0.2 })).filter(d => d.label === 'dog'); // chien au loin
-    return dets.sort((a, b) => b.score - a.score);
+    return dedupeDets(dets.sort((a, b) => b.score - a.score));
+  }
+  // Le détecteur renvoie parfois plusieurs cadres pour le même chien : on ne garde
+  // que le meilleur quand deux cadres se recouvrent fortement ou que l'un contient l'autre.
+  function dedupeDets(dets) {
+    const kept = [];
+    dets.forEach(d => {
+      const dup = kept.some(k => {
+        const ix = Math.max(0, Math.min(d.box.xmax, k.box.xmax) - Math.max(d.box.xmin, k.box.xmin));
+        const iy = Math.max(0, Math.min(d.box.ymax, k.box.ymax) - Math.max(d.box.ymin, k.box.ymin));
+        const inter = ix * iy, a = boxArea(d.box), b = boxArea(k.box);
+        return inter / (a + b - inter) > 0.45 || inter / Math.min(a, b) > 0.7;
+      });
+      if (!dup) kept.push(d);
+    });
+    return kept;
   }
   function cropSquare(canvas, box, margin = 0.08) {
     const w = box.xmax - box.xmin, h = box.ymax - box.ymin;
@@ -6492,21 +6511,37 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   // Chiens présents ce jour-là (planning) : la reconnaissance se concentre sur eux.
   // Si aucun n'est sélectionné, tous les chiens sont comparés.
   const presentSet = () => state.present.size ? state.present : null;
-  function ranked(it) { // candidats triés : présents d'abord (par score), puis les autres
+  function ranked(it, taken) { // candidats triés : présents d'abord (par score), puis les autres
     const P = presentSet();
-    if (!P) return { pres: it.scores, abs: [] };
-    return { pres: it.scores.filter(s => P.has(s.key)), abs: it.scores.filter(s => !P.has(s.key)) };
+    const free = (s) => !taken || !taken.has(s.key); // un même chien n'apparaît qu'une fois par photo
+    if (!P) return { pres: it.scores.filter(free), abs: [] };
+    return { pres: it.scores.filter(s => P.has(s.key) && free(s)), abs: it.scores.filter(s => !P.has(s.key) && free(s)) };
   }
-  function isSure(it) {
-    const { pres, abs } = ranked(it);
+  function isSure(it, taken) {
+    const { pres, abs } = ranked(it, taken);
     const a = pres[0], b = pres[1], c = abs[0];
     if (!a || a.score < thr()) return false;
     if (b && a.score - b.score < mar()) return false;
     if (c && c.score - a.score >= mar()) return false; // un chien non prévu ce jour-là ressemble nettement plus : à vérifier
     return true;
   }
+  const bestPresentScore = (it) => { const r = ranked(it).pres[0]; return r ? r.score : 0; };
   function applyAuto() { // (re)calcule l'attribution automatique, sans écraser les choix manuels
-    state.photos.forEach(p => p.items.forEach(it => { if (!it.manual) it.choice = isSure(it) ? ranked(it).pres[0].key : null; }));
+    state.photos.forEach(p => {
+      const taken = new Set(p.items.filter(it => it.manual && it.choice && it.choice !== 'skip').map(it => it.choice));
+      p.items.filter(it => !it.manual).sort((a, b) => bestPresentScore(b) - bestPresentScore(a)).forEach(it => {
+        it.dup = false;
+        const rk = ranked(it, taken);
+        // même chien déjà attribué sur cette photo (double détection) : on l'écarte
+        const full = ranked(it);
+        const sameAsTaken = full.pres[0] && taken.has(full.pres[0].key) && isSure(it);
+        if (p.items.length > 1 && (!rk.pres.length || sameAsTaken)) {
+          it.choice = 'skip'; it.dup = true; return;
+        }
+        if (isSure(it, taken)) { it.choice = rk.pres[0].key; taken.add(it.choice); }
+        else it.choice = null;
+      });
+    });
   }
 
   // ---------- chiens prévus ce jour-là ----------
@@ -6665,23 +6700,29 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (pendingPhotos.length) {
       html += `<div class="photos-group pending"><div class="photos-group-head"><div class="photos-group-title">⚠️ À vérifier</div><div class="photos-group-count">Choisis le bon chien, ou « Ignorer »</div></div>`;
       pendingPhotos.forEach(p => {
+        const multi = p.items.filter(it => !it.dup).length > 1;
+        const taken = new Set(p.items.filter(it => it.choice && it.choice !== 'skip').map(it => it.choice));
+        let rows = '';
         p.items.forEach((it, ii) => {
-          if (it.choice) return;
-          const rk = ranked(it);
+          if (it.dup) return;
+          const label = multi ? `Chien n°${ii + 1}` : '';
+          if (it.choice === 'skip') { rows += `<div class="photos-pending-row"><span class="dim">${label ? label + ' : ' : ''}ignoré</span> <button type="button" class="photos-btn ghost small" data-act="change" data-p="${p.id}" data-i="${ii}">Changer</button></div>`; return; }
+          if (it.choice) { rows += `<div class="photos-pending-row ok">✓ ${label ? label + ' : ' : ''}${esc(candidateLabel(it.choice))} <span class="dim">(déjà attribué)</span> <button type="button" class="photos-btn ghost small" data-act="change" data-p="${p.id}" data-i="${ii}">Changer</button></div>`; return; }
+          const rk = ranked(it, taken);
           const top3 = [...rk.pres, ...rk.abs].slice(0, 3);
-          const rest = allKeys.filter(k => !top3.some(t => t.key === k));
-          html += `<div class="photos-pending-item">
-            <img src="${p.thumb}" alt="">
-            <div class="photos-pending-info"><div class="fn">${esc(p.name)}${p.items.length > 1 ? ` — chien n°${ii + 1}` : ''}</div>
-              ${it.fallback ? 'Chien non détecté (photo entière analysée)' : 'Reconnaissance incertaine'}
-              <select data-p="${p.id}" data-i="${ii}">
-                <option value="">Choisir…</option>
-                ${top3.map(t => `<option value="${esc(t.key)}">${esc(candidateLabel(t.key))} — ${Math.round(t.score * 100)} %</option>`).join('')}
-                ${rest.length ? `<option disabled>──────────</option>${rest.map(k => `<option value="${esc(k)}">${esc(candidateLabel(k))}</option>`).join('')}` : ''}
-                <option disabled>──────────</option>
-                <option value="skip">Ignorer cette photo</option>
-              </select></div></div>`;
+          const rest = allKeys.filter(k => !taken.has(k) && !top3.some(t => t.key === k));
+          rows += `<div class="photos-pending-row"><div>${label ? `<strong>${label}</strong> — ` : ''}<span class="dim">${it.fallback ? 'chien non détecté (photo entière analysée)' : 'reconnaissance incertaine'}</span></div>
+            <select data-p="${p.id}" data-i="${ii}">
+              <option value="">Choisir…</option>
+              ${top3.map(t => `<option value="${esc(t.key)}">${esc(candidateLabel(t.key))} — ${Math.round(t.score * 100)} %</option>`).join('')}
+              ${rest.length ? `<option disabled>──────────</option>${rest.map(k => `<option value="${esc(k)}">${esc(candidateLabel(k))}</option>`).join('')}` : ''}
+              <option disabled>──────────</option>
+              <option value="skip">Ignorer ${multi ? 'ce chien' : 'cette photo'}</option>
+            </select></div>`;
         });
+        html += `<div class="photos-pending-item">
+          <img src="${p.thumb}" alt="">
+          <div class="photos-pending-info"><div class="fn">${esc(p.name)}</div>${rows}</div></div>`;
       });
       html += '</div>';
     }
@@ -6736,6 +6777,10 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (act === 'rm') { // pas le bon chien : retour dans "À vérifier"
       const p = state.photos.find(x => x.id === btn.dataset.p);
       if (p) p.items.forEach(it => { if (it.choice && it.choice.split('|')[0] === btn.dataset.c) { it.choice = null; it.manual = true; } });
+      renderResults();
+    } else if (act === 'change') {
+      const p = state.photos.find(x => x.id === btn.dataset.p);
+      if (p) { const it = p.items[+btn.dataset.i]; it.choice = null; it.manual = true; }
       renderResults();
     } else if (act === 'copy') {
       const p = state.photos.find(x => x.id === btn.dataset.p);
