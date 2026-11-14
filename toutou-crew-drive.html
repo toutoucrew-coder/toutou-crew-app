@@ -2089,6 +2089,23 @@
   <button class="modal-btn secondary" id="payment-method-cancel" style="width:100%;">Annuler</button>
 </div>
 
+<div class="modal-overlay" id="newclient-overlay"></div>
+<div class="modal" id="newclient-modal" aria-hidden="true">
+  <div class="modal-title">Nouveau client</div>
+  <div class="note" style="margin-bottom:12px;">Pas besoin d'abonnement ni d'encaissement : tu pourras compléter la fiche et choisir une formule plus tard.</div>
+  <label for="nc-owner">Nom du maître</label>
+  <input type="text" id="nc-owner" placeholder="Prénom Nom" autocomplete="off" style="margin-bottom:12px;">
+  <label for="nc-dog">Nom du chien</label>
+  <input type="text" id="nc-dog" placeholder="Maya" autocomplete="off" style="margin-bottom:12px;">
+  <label for="nc-dog2">Nom du 2e chien (optionnel)</label>
+  <input type="text" id="nc-dog2" autocomplete="off" style="margin-bottom:12px;">
+  <div class="full" id="nc-error" style="display:none;"></div>
+  <div class="modal-actions">
+    <button type="button" class="modal-btn secondary" id="nc-cancel">Annuler</button>
+    <button type="button" class="modal-btn primary" id="nc-save">Créer le client</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="absence-overlay"></div>
 <div class="modal" id="absence-modal" aria-hidden="true">
   <div id="absence-step-form">
@@ -4891,12 +4908,49 @@ document.querySelectorAll('.subtab').forEach(subtab => {
 // "+ Nouveau client" directly from Réglages > Clients
 document.getElementById('clients-search').addEventListener('input', renderClientsSettings);
 
+// Création d'un client sans abonnement ni encaissement (en prévision de...)
+const newClientOverlay = document.getElementById('newclient-overlay');
+const newClientModal = document.getElementById('newclient-modal');
+function closeNewClientModal() {
+  newClientOverlay.classList.remove('open');
+  newClientModal.classList.remove('open');
+  newClientModal.setAttribute('aria-hidden', 'true');
+}
 document.getElementById('open-add-client-only').addEventListener('click', () => {
-  openAddPanel();
-  const clientSelect = document.getElementById('f-client');
-  clientSelect.value = '__new__';
-  clientSelect.dispatchEvent(new Event('change'));
-  refreshSubmitState();
+  ['nc-owner', 'nc-dog', 'nc-dog2'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('nc-error').style.display = 'none';
+  newClientOverlay.classList.add('open');
+  newClientModal.classList.add('open');
+  newClientModal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('nc-owner').focus(), 50);
+});
+document.getElementById('nc-cancel').addEventListener('click', closeNewClientModal);
+newClientOverlay.addEventListener('click', closeNewClientModal);
+document.getElementById('nc-save').addEventListener('click', async () => {
+  const owner = document.getElementById('nc-owner').value.trim();
+  const dog1 = document.getElementById('nc-dog').value.trim();
+  const dog2 = document.getElementById('nc-dog2').value.trim();
+  const err = document.getElementById('nc-error');
+  if (!owner || !dog1) {
+    err.textContent = 'Renseigne le nom du maître et celui du chien.';
+    err.style.display = 'block';
+    return;
+  }
+  const client = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ownerName: owner, dogs: [] };
+  [dog1, dog2].filter(Boolean).forEach(name => {
+    client.dogs.push({ id: newDogId(client), name, walkDays: [], isTrial: false, trialDate: null });
+  });
+  clients.push(client);
+  try { await saveClients(); }
+  catch (e) {
+    clients.pop();
+    err.textContent = 'Erreur lors de l\'enregistrement : ' + (e && e.message ? e.message : e);
+    err.style.display = 'block';
+    return;
+  }
+  closeNewClientModal();
+  render();
+  openClientDetail(client.id); // on complète la fiche (adresse, téléphone, formule…)
 });
 
 // Side panel (add encaissement)
