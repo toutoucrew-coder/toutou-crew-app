@@ -6689,13 +6689,13 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const VARIANTS = [
     (o, n, hi) => `${hi} ${o} ! Voici les photos de la journée ${dePhrase(n)} 🐾`,
     (o, n) => `Coucou ${o} ! Voici les photos de la journée avec ${joinNames(n)} 📸`,
-    (o, n) => `Hello ${o} ! Je vous envoie les photos de la journée ${dePhrase(n)} 🐶`,
+    (o, n) => `Hello ${o} ! Voilà les photos de la journée ${dePhrase(n)} 🐶`,
     (o, n, hi) => `${hi} ${o}, voici un petit aperçu en photos de la journée ${dePhrase(n)} 🌳`,
     (o, n) => `Salut ${o} ! Les photos de la journée avec ${joinNames(n)} 📷`,
     (o, n, hi) => `${hi} ${o}, voici les photos de la journée ${dePhrase(n)} 🐕`,
     (o, n) => `Petit récap en images de la journée ${dePhrase(n)}, ${o} ! 📸`,
     (o, n) => `${o}, les photos de la journée sont arrivées ! 🐾 Voici ${joinNames(n)} en balade.`,
-    (o, n) => `Coucou ${o} ! Je vous partage les photos de la journée ${dePhrase(n)} 🌿`,
+    (o, n) => `${o}, voilà les photos de la journée ${dePhrase(n)} 🌿`,
     (o, n, hi) => `${hi} ${o} ! Voici quelques photos de la journée avec ${joinNames(n)} 🐶`,
   ];
   const greeting = () => new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
