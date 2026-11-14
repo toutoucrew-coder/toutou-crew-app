@@ -1892,6 +1892,7 @@
           <option value="test">Balade test</option>
           <option value="seul">Abonnement 1 chien</option>
           <option value="deux">Abonnement 2 chiens</option>
+          <option value="gratuit">Abonnement offert (gratuit)</option>
         </select>
         <div class="note" id="f-formule-note" style="display:none;"></div>
       </div>
@@ -2471,13 +2472,20 @@ function setDogWalkDays(dog, newDays, sinceDate) {
   if (changed || !dog.subscriptionSince) dog.subscriptionSince = sinceDate;
 }
 
+// Type de formule d'un chien : 'test' | 'gratuit' (abonnement offert, sans
+// encaissement) | 'seul' (abonnement payant) | 'aucun'.
+function dogFormuleKind(d) {
+  if (d.isTrial) return 'test';
+  if ((d.walkDays || []).length > 0) return d.isFree ? 'gratuit' : 'seul';
+  return 'aucun';
+}
 function dogStatusLabel(d) {
   if (d.isTrial && d.trialDate) {
     const date = new Date(d.trialDate + 'T00:00:00');
     return `${d.name} : balade test — ${date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}`;
   }
   const n = (d.walkDays || []).length;
-  if (n > 0) return `${d.name} : abonnement — ${n}x/semaine`;
+  if (n > 0) return `${d.name} : ${d.isFree ? 'abonnement offert 🎁' : 'abonnement'} — ${n}x/semaine`;
   return `${d.name} : aucune balade planifiée`;
 }
 // Version détaillée utilisée uniquement dans la fiche client (onglet
@@ -2485,6 +2493,7 @@ function dogStatusLabel(d) {
 function dogDetailStatusLabel(d, client) {
   if (d.isTrial && d.trialDate) return dogStatusLabel(d);
   const n = (d.walkDays || []).length;
+  if (n > 0 && d.isFree) return `Abonnement offert 🎁 — ${n}x/semaine (aucun encaissement)`;
   if (n > 0) {
     if (d.subscriptionSince) {
       const since = new Date(d.subscriptionSince + 'T00:00:00').toLocaleDateString('fr-FR');
@@ -2668,15 +2677,15 @@ function handleDogFormuleOrFreqChange(formuleCard, draftClient) {
   draftClient.subscriptionType = newFormule === 'deux' ? 'deux' : 'seul';
   clientDetailFormuleSelection = { formule: newFormule, freq: newFreq };
 
-  freqWrap.style.display = (newFormule === 'seul' || newFormule === 'deux') ? 'block' : 'none';
+  freqWrap.style.display = (newFormule === 'seul' || newFormule === 'deux' || newFormule === 'gratuit') ? 'block' : 'none';
 
   const targets = getFormuleTargetDogs(draftClient, newFormule);
 
   if (newFormule === 'aucun') {
-    targets.forEach(d => { d.walkDays = []; d.isTrial = false; d.trialDate = null; });
+    targets.forEach(d => { d.walkDays = []; d.isTrial = false; d.trialDate = null; d.isFree = false; });
     noteEl.style.display = 'none';
   } else if (newFormule === 'test') {
-    targets.forEach(d => { d.walkDays = []; d.isTrial = true; d.trialDate = d.trialDate || todayISO(); });
+    targets.forEach(d => { d.walkDays = []; d.isTrial = true; d.trialDate = d.trialDate || todayISO(); d.isFree = false; });
     noteEl.style.display = 'none';
   } else {
     targets.forEach(d => {
@@ -2690,6 +2699,7 @@ function handleDogFormuleOrFreqChange(formuleCard, draftClient) {
       }
       d.isTrial = false;
       d.trialDate = null;
+      d.isFree = newFormule === 'gratuit';
     });
     updateFormuleDaysNote(formuleCard, targets, newFreq);
   }
@@ -2718,12 +2728,13 @@ function updateFormuleDaysNote(formuleCard, targets, requiredFreq) {
 // foyer à 1 seul chien — utilisé dans le résumé de "Valider mes
 // changements", sans rien modifier.
 function computeFormuleBillingPreview(client, oldDog, newDog) {
-  const oldFormule = oldDog.isTrial ? 'test' : ((oldDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
-  const newFormule = newDog.isTrial ? 'test' : ((newDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const oldFormule = dogFormuleKind(oldDog);
+  const newFormule = dogFormuleKind(newDog);
   const oldFreq = (oldDog.walkDays || []).length;
   const newFreq = (newDog.walkDays || []).length;
   if (oldFormule === newFormule && oldFreq === newFreq) return null;
 
+  if (newFormule === 'gratuit') return newFreq === 0 ? null : "Abonnement offert : aucun encaissement ne sera créé.";
   if (newFormule === 'aucun') return "L'abonnement sera arrêté (planning vidé), sans nouvel encaissement.";
   if (newFormule === 'test') return "Passage en balade test (planning vidé) — ajoute l'encaissement de la balade séparément si besoin.";
   if (newFreq === 0) return null; // jours pas encore choisis
@@ -2746,8 +2757,8 @@ function computeFormuleBillingPreview(client, oldDog, newDog) {
 // seulement pour un foyer à 1 seul chien (sinon ambiguïté sur l'encaissement
 // à modifier).
 function applyFormuleBillingChange(client, oldDog, newDog) {
-  const oldFormule = oldDog.isTrial ? 'test' : ((oldDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
-  const newFormule = newDog.isTrial ? 'test' : ((newDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const oldFormule = dogFormuleKind(oldDog);
+  const newFormule = dogFormuleKind(newDog);
   const oldFreq = (oldDog.walkDays || []).length;
   const newFreq = (newDog.walkDays || []).length;
   if (oldFormule === newFormule && oldFreq === newFreq) return;
@@ -2830,13 +2841,13 @@ function renderDogDetailCard(draftClient, dog) {
 // radio (un chien nouvellement ciblé n'a souvent encore aucune donnée).
 function deriveFormuleSelection(draftClient) {
   const isExistingDeux = draftClient.dogs.length === 2 && draftClient.subscriptionType === 'deux' &&
-    draftClient.dogs.every(d => !d.isTrial && (d.walkDays || []).length > 0);
+    draftClient.dogs.every(d => !d.isTrial && !d.isFree && (d.walkDays || []).length > 0);
   if (isExistingDeux) {
     return { formule: 'deux', freq: draftClient.dogs[0].walkDays.length || 1 };
   }
   const singleDog = draftClient.dogs.length === 1 ? draftClient.dogs[0] : null;
   const targetDog = singleDog || getDogById(draftClient, clientDetailFormuleTargetDogId) || draftClient.dogs[0];
-  const formule = targetDog.isTrial ? 'test' : ((targetDog.walkDays || []).length > 0 ? 'seul' : 'aucun');
+  const formule = dogFormuleKind(targetDog);
   const freq = (targetDog.walkDays || []).length || 1;
   return { formule, freq };
 }
@@ -2856,10 +2867,11 @@ function renderAbonnementCard(draftClient) {
             <option value="aucun" ${currentFormule === 'aucun' ? 'selected' : ''}>Aucun abonnement</option>
             <option value="test" ${currentFormule === 'test' ? 'selected' : ''}>Balade test</option>
             <option value="seul" ${currentFormule === 'seul' ? 'selected' : ''}>Abonnement — 1 chien</option>
+            <option value="gratuit" ${currentFormule === 'gratuit' ? 'selected' : ''}>Abonnement offert (gratuit)</option>
             <option value="deux" ${currentFormule === 'deux' ? 'selected' : ''} ${deuxDisabled ? 'disabled title="Il faut un 2e chien pour cette formule"' : ''}>Abonnement — 2 chiens</option>
           </select>
         </div>
-        <div class="dog-formule-freq-wrap" style="display:${(currentFormule === 'seul' || currentFormule === 'deux') ? 'block' : 'none'};">
+        <div class="dog-formule-freq-wrap" style="display:${(currentFormule === 'seul' || currentFormule === 'deux' || currentFormule === 'gratuit') ? 'block' : 'none'};">
           <label>Fréquence</label>
           <select class="dog-formule-freq-select">
             ${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === currentFreq ? 'selected' : ''}>${n}x/semaine</option>`).join('')}
@@ -2940,14 +2952,15 @@ function renderClientDetailDogs(draftClient) {
       // précis restent à choisir pour le nouveau chien.
       if (formule && formule !== 'aucun' && formule !== 'deux') {
         const prevDog = getDogById(clientDetailDraft, prevTargetId);
-        if (prevDog) { prevDog.walkDays = []; prevDog.isTrial = false; prevDog.trialDate = null; }
+        if (prevDog) { prevDog.walkDays = []; prevDog.isTrial = false; prevDog.trialDate = null; prevDog.isFree = false; }
         const newDog = getDogById(clientDetailDraft, newTargetId);
+        if (newDog) newDog.isFree = formule === 'gratuit';
         if (newDog && formule === 'test') { newDog.isTrial = true; newDog.trialDate = newDog.trialDate || todayISO(); }
       }
       clientDetailFormuleTargetDogId = newTargetId;
       renderClientDetailDogs(clientDetailDraft);
       updateValidateChangesState();
-      if (formule === 'seul' || formule === 'deux') {
+      if (formule === 'seul' || formule === 'deux' || formule === 'gratuit') {
         const newFormuleCard = document.querySelector('.dog-formule-card');
         if (newFormuleCard) {
           const targets = getFormuleTargetDogs(clientDetailDraft, formule);
@@ -3048,6 +3061,9 @@ function buildClientChangesSummary() {
     }
     if (JSON.stringify(sd.walkDays || []) !== JSON.stringify(dd.walkDays || [])) {
       lines.push(`${escapeHtml(dd.name)} — jours : ${dayLabelsFr(sd.walkDays)} → ${dayLabelsFr(dd.walkDays)}`);
+    }
+    if (!!sd.isFree !== !!dd.isFree) {
+      lines.push(`🎁 ${escapeHtml(dd.name)} — ${dd.isFree ? 'abonnement offert (gratuit)' : 'n\'est plus offert'}`);
     }
     if ((sd.photo || null) !== (dd.photo || null)) {
       lines.push(`${escapeHtml(dd.name)} — photo : ${dd.photo ? (sd.photo ? 'modifiée' : 'ajoutée') : 'retirée'}`);
@@ -3484,19 +3500,19 @@ function absenceForDate(dateStr) {
 
 // Nombre de "balades-chien" prévues ce jour-là pour un foyer (un chien = une
 // unité), en ne comptant pas les balades test ni avant le début d'abonnement.
-function walkUnitsOnDate(client, dateStr) {
+function walkUnitsOnDate(client, dateStr, paidOnly = false) {
   const code = DOW_CODE_BY_JS_DAY[new Date(dateStr + 'T00:00:00').getDay()];
   if (!code) return 0;
   return (client.dogs || []).filter(dog =>
-    !dog.isTrial && (dog.walkDays || []).includes(code) && (!dog.subscriptionSince || dog.subscriptionSince <= dateStr)
+    !dog.isTrial && !(paidOnly && dog.isFree) && (dog.walkDays || []).includes(code) && (!dog.subscriptionSince || dog.subscriptionSince <= dateStr)
   ).length;
 }
-function walkUnitsInMonth(client, monthKey) {
+function walkUnitsInMonth(client, monthKey, paidOnly = false) {
   const [y, m] = monthKey.split('-').map(Number);
   const lastDay = new Date(y, m, 0).getDate();
   let total = 0;
   for (let day = 1; day <= lastDay; day++) {
-    total += walkUnitsOnDate(client, `${monthKey}-${String(day).padStart(2, '0')}`);
+    total += walkUnitsOnDate(client, `${monthKey}-${String(day).padStart(2, '0')}`, paidOnly);
   }
   return total;
 }
@@ -3505,8 +3521,8 @@ function walkValueOnDate(client, dateStr) {
   const tarif = renewalTarifFor(client);
   if (!tarif) return 0;
   const price = tarifValue(tarif.code);
-  const total = walkUnitsInMonth(client, dateStr.slice(0, 7));
-  const units = walkUnitsOnDate(client, dateStr);
+  const total = walkUnitsInMonth(client, dateStr.slice(0, 7), true);
+  const units = walkUnitsOnDate(client, dateStr, true);
   if (!price || !total || !units) return 0;
   return round2(price * units / total);
 }
@@ -3544,6 +3560,7 @@ async function saveAbsence(type, startDate, endDate) {
   absenceImpact(absence).forEach(({ client, walks }) => {
     client.missedWalks = client.missedWalks || [];
     walks.forEach(w => {
+      if (!(w.value > 0)) return; // balade offerte : rien à créditer
       if (client.missedWalks.some(m => m.date === w.date)) return;
       client.missedWalks.push({ id: absence.id + '-' + w.date, absenceId: absence.id, date: w.date, value: w.value, credited: false });
     });
@@ -3591,7 +3608,7 @@ function buildAbsenceMessage(absence, entry) {
     sentences.push(isVacances
       ? `${intro} : je n'assurerai donc pas les balades de ${names} sur cette période.`
       : `${intro} et je ne pourrai malheureusement pas assurer ${plural ? 'les balades' : 'la balade'} de ${names} ${datesPhrase(walkDates)}.`);
-    sentences.push(`${plural ? 'Elles seront déduites' : 'Elle sera déduite'} au prorata de votre prochain abonnement.`);
+    if (walks.some(w => w.value > 0)) sentences.push(`${plural ? 'Elles seront déduites' : 'Elle sera déduite'} au prorata de votre prochain abonnement.`);
     if (isVacances) sentences.push(`Reprise des balades le ${frDateLong(nextWorkdayAfter(absence.endDate))}.`);
     if (trials.length) {
       sentences.push(`La balade test de ${joinNames(trials.map(t => t.dogName))} ${datesPhrase(trialDates)} est également annulée : dites-moi quand vous seriez disponible pour la reprogrammer.`);
@@ -3868,6 +3885,7 @@ function populateFormuleSelect() {
     <option value="test">Balade test</option>
     <option value="seul">Abonnement 1 chien</option>
     <option value="deux">Abonnement 2 chiens</option>
+    <option value="gratuit">Abonnement offert (gratuit)</option>
   `;
   select.value = 'custom';
 }
@@ -3875,9 +3893,15 @@ function populateFrequenceSelect() {
   const formule = document.getElementById('f-formule').value;
   const container = document.getElementById('frequence-container');
   const select = document.getElementById('f-frequence');
-  if (formule !== 'seul' && formule !== 'deux') {
+  if (formule !== 'seul' && formule !== 'deux' && formule !== 'gratuit') {
     container.style.display = 'none';
     select.innerHTML = '';
+    return;
+  }
+  if (formule === 'gratuit') {
+    select.innerHTML = [1, 2, 3, 4, 5].map(n => `<option value="${n}">${n}x/semaine — offert</option>`).join('');
+    select.value = '1';
+    container.style.display = 'block';
     return;
   }
   const t = settings.tarifs;
@@ -3890,11 +3914,14 @@ function populateFrequenceSelect() {
 }
 // Reconstruit le code tarif interne ('test' / 'custom' / 'seul-N' / 'deux-N')
 // à partir des deux champs "Formule" + "Fréquence".
+const isFreeFormSelected = () => document.getElementById('f-formule').value === 'gratuit';
 function getTarifCode() {
   const formule = document.getElementById('f-formule').value;
   if (formule === 'custom' || formule === 'test') return formule;
   const freq = document.getElementById('f-frequence').value;
-  return formule + '-' + (freq || '1');
+  // Un abonnement offert se planifie comme un abonnement "1 chien" (jours de
+  // balade), mais sans montant ni encaissement.
+  return (formule === 'gratuit' ? 'seul' : formule) + '-' + (freq || '1');
 }
 
 const WEEKDAY_JSINDEX = { lun: 1, mar: 2, mer: 3, jeu: 4, ven: 5 };
@@ -4206,6 +4233,7 @@ function updateScheduleUI() {
 }
 
 function recalcProratedAmount() {
+  if (isFreeFormSelected()) { document.getElementById('f-amount-hint').style.display = 'none'; return; }
   const tarifCode = getTarifCode();
   const requiredDays = tarifRequiredDays(tarifCode);
   const hint = document.getElementById('f-amount-hint');
@@ -4933,9 +4961,9 @@ function getRecurringClients() {
     if (c.archived) return false;
     const dogs = c.dogs || [];
     if (c.subscriptionType === 'deux') {
-      return dogs.length === 2 && dogs.every(d => !d.isTrial && (d.walkDays || []).length > 0);
+      return dogs.length === 2 && dogs.every(d => !d.isTrial && !d.isFree && (d.walkDays || []).length > 0);
     }
-    return dogs.some(d => !d.isTrial && (d.walkDays || []).length > 0);
+    return dogs.some(d => !d.isTrial && !d.isFree && (d.walkDays || []).length > 0);
   });
 }
 
@@ -4946,7 +4974,7 @@ function renewalTarifFor(client) {
     if (n < 1 || n > 5) return null;
     return { code: `deux-${n}`, type: 'deux', n };
   }
-  const activeDog = dogs.find(d => !d.isTrial && (d.walkDays || []).length > 0);
+  const activeDog = dogs.find(d => !d.isTrial && !d.isFree && (d.walkDays || []).length > 0);
   if (!activeDog) return null;
   const n = activeDog.walkDays.length;
   if (n < 1 || n > 5) return null;
@@ -5308,6 +5336,12 @@ function handleFormuleOrFrequenceChange() {
   // Appelé en dernier : reconstruit le sélecteur de chien / jours de balade
   // en fonction du tarif choisi, et recalcule le montant au prorata si possible.
   updateScheduleUI();
+
+  // Abonnement offert : ni montant ni encaissement.
+  if (isFreeFormSelected()) {
+    document.getElementById('amount-field-wrap').style.display = 'none';
+    document.getElementById('f-amount-hint').style.display = 'none';
+  }
 }
 
 document.getElementById('f-formule').addEventListener('change', () => {
@@ -5379,13 +5413,19 @@ function isFormComplete() {
     }
   }
 
-  const amount = parseFloat(document.getElementById('f-amount').value);
-  if (isNaN(amount) || amount <= 0) return false;
+  if (!isFreeFormSelected()) {
+    const amount = parseFloat(document.getElementById('f-amount').value);
+    if (isNaN(amount) || amount <= 0) return false;
+  }
 
   return true;
 }
 function refreshSubmitState() {
-  document.querySelector('#entry-form button[type=submit]').disabled = !isFormComplete();
+  const btn = document.querySelector('#entry-form button[type=submit]');
+  btn.disabled = !isFormComplete();
+  if (!btn.textContent.startsWith('Enregistrement')) {
+    btn.textContent = isFreeFormSelected() ? 'Ajouter le chien (offert)' : "Ajouter l'encaissement";
+  }
 }
 
 document.getElementById('entry-form').addEventListener('submit', async (ev) => {
@@ -5400,6 +5440,7 @@ document.getElementById('entry-form').addEventListener('submit', async (ev) => {
   const note = document.getElementById('f-note').value.trim();
   const clientSelect = document.getElementById('f-client');
   const clientChoice = clientSelect.value;
+  const isFree = isFreeFormSelected();
 
   if (!clientChoice) return showError('Choisis un client dans la liste (ou crée-en un nouveau).');
   if (document.getElementById('f-formule').value === 'custom') return showError('Choisis une formule.');
@@ -5408,7 +5449,7 @@ document.getElementById('entry-form').addEventListener('submit', async (ev) => {
   if (date < firstDayOfMonth(activeMonth)) {
     return showError(`Impossible d'ajouter un encaissement sur un mois déjà clôturé. Choisis une date à partir du ${new Date(firstDayOfMonth(activeMonth) + 'T00:00:00').toLocaleDateString('fr-FR')}.`);
   }
-  if (isNaN(amount) || amount <= 0) return showError('Renseigne un montant valide (supérieur à 0).');
+  if (!isFree && (isNaN(amount) || amount <= 0)) return showError('Renseigne un montant valide (supérieur à 0).');
 
   const tarifCode = getTarifCode();
   const requiredDays = tarifRequiredDays(tarifCode);
@@ -5495,15 +5536,17 @@ document.getElementById('entry-form').addEventListener('submit', async (ev) => {
       setDogWalkDays(client.dogs[0], day1, date);
       client.dogs[0].isTrial = false;
       client.dogs[0].trialDate = null;
+      client.dogs[0].isFree = false;
       setDogWalkDays(client.dogs[1], day2, date);
       client.dogs[1].isTrial = false;
       client.dogs[1].trialDate = null;
+      client.dogs[1].isFree = false;
       client.subscriptionType = 'deux';
     } else if (tarifCode === 'test') {
       const targets = pickedDogIds.length > 0
         ? pickedDogIds.map(id => getDogById(client, id)).filter(Boolean)
         : [justAddedNewSecondDog ? client.dogs[1] : client.dogs[0]];
-      targets.forEach(d => { d.isTrial = true; d.trialDate = date; });
+      targets.forEach(d => { d.isTrial = true; d.trialDate = date; d.isFree = false; });
     } else if (requiredDays) {
       const targetDog = pickedDogId ? getDogById(client, pickedDogId)
         : (justAddedNewSecondDog ? client.dogs[1] : client.dogs[0]);
@@ -5511,19 +5554,22 @@ document.getElementById('entry-form').addEventListener('submit', async (ev) => {
         setDogWalkDays(targetDog, day1, date);
         targetDog.isTrial = false;
         targetDog.trialDate = null;
+        targetDog.isFree = isFree;
       }
       client.subscriptionType = 'seul';
     }
     await saveClients();
 
-    entries.push({
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      date, amount, note, clientId, paid: false,
-      formuleLabel: tarifCode !== 'custom'
-        ? tarifNoteLabel(tarifCode) + (tarifCode === 'test' && pickedDogIds.length > 1 ? ` (${pickedDogIds.length} chiens)` : '')
-        : null
-    });
-    await saveEntries();
+    if (!isFree) {
+      entries.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        date, amount, note, clientId, paid: false,
+        formuleLabel: tarifCode !== 'custom'
+          ? tarifNoteLabel(tarifCode) + (tarifCode === 'test' && pickedDogIds.length > 1 ? ` (${pickedDogIds.length} chiens)` : '')
+          : null
+      });
+      await saveEntries();
+    }
     document.getElementById('entry-form').reset();
     document.getElementById('client-new-fields').style.display = 'none';
     document.getElementById('f-second-dog-name').value = '';
