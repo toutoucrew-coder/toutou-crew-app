@@ -7038,8 +7038,22 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         markSent(cid, names);
       } else if (rcpt.k === 'both') {
         const opts = recipientOptions(g.client);
-        if (!state.bothStep[cid]) { if (!open(opts.find(o => o.k === 'principal').phone, 'both')) return blocked(); state.bothStep[cid] = 1; }
-        else { if (!open(opts.find(o => o.k === 'conjoint').phone, 'both')) return blocked(); state.bothStep[cid] = 0; markSent(cid, names); }
+        const pPhone = opts.find(o => o.k === 'principal').phone, qPhone = opts.find(o => o.k === 'conjoint').phone;
+        const p1 = ownerFirstName(g.client), p2 = conjFirstName(g.client);
+        if (!state.bothStep[cid]) {
+          if (!open(pPhone, 'both')) return blocked();
+          if (open(qPhone, 'both')) { // les deux onglets ont pu s'ouvrir d'un coup
+            markSent(cid, names);
+            state.groupNote[cid] = 'Les deux conversations sont ouvertes.';
+          } else { // le navigateur n'autorise qu'une fenêtre par clic : 2e étape
+            state.bothStep[cid] = 1;
+            state.groupNote[cid] = `La conversation ${dePhrase([p1])} est ouverte. Clique sur « 2/2 » pour ouvrir celle ${dePhrase([p2])} (ou autorise les pop-ups pour ce site pour tout ouvrir d'un coup).`;
+          }
+        } else {
+          if (!open(qPhone, 'both')) return blocked();
+          state.bothStep[cid] = 0; state.groupNote[cid] = 'Les deux conversations sont ouvertes.';
+          markSent(cid, names);
+        }
       } else if (rcpt.k === 'group') {
         try { await navigator.clipboard.writeText(textFor(g, 'group')); state.groupNote[cid] = 'Message copié : colle-le dans le groupe (Cmd + V).'; }
         catch (e) { state.groupNote[cid] = 'Copie impossible : copie le message ci-dessous à la main.'; }
