@@ -7027,7 +7027,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         try { await exportGroup(g); exportedNow = true; }
         catch (err) { if (err && err.name === 'AbortError') state.noExport[cid] = true; else { state.exportMsg = 'Dossier non préparé : ' + errText(err); console.error(err); } }
       }
-      const open = (phone, kind) => window.open(`https://wa.me/${phone}?text=${encodeURIComponent(textFor(g, kind))}`, '_blank');
+      // Un espace est ajouté après le texte : sans lui, WhatsApp tronque parfois le dernier octet d'un emoji final (affiché « � »).
+      const open = (phone, kind) => window.open(`https://wa.me/${phone}?text=${encodeURIComponent(textFor(g, kind).trimEnd() + ' ')}`, '_blank');
       const blocked = () => { // l'attente du dossier a pu faire bloquer l'ouverture de l'onglet
         state.exportMsg = 'Dossier prêt ✓ — clique à nouveau sur le bouton pour ouvrir WhatsApp.';
         renderResults();
