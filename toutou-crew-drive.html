@@ -6924,17 +6924,30 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     const folder = safeName(`${g.dogNames.join(' & ')} - ${g.client.ownerName}`);
     const dir = await dayDir.getDirectoryHandle(folder, { create: true });
     const used = new Set();
+    const st = $('photos-walk-status');
+    let n = 0, notConverted = 0;
     for (const p of todo) {
-      let name = p.name, n = 1;
-      while (used.has(name)) { const dot = p.name.lastIndexOf('.'); name = dot > 0 ? `${p.name.slice(0, dot)} (${++n})${p.name.slice(dot)}` : `${p.name} (${++n})`; }
+      st.textContent = `Préparation du dossier : ${++n}/${todo.length}…`;
+      // WhatsApp n'affiche pas l'aperçu des HEIC (photos iPhone) : on les convertit en JPEG
+      let blob = p.file, base = p.name;
+      if (/\.(heic|heif)$/i.test(p.name)) {
+        try {
+          const c = await fileToCanvas(p.file, 3000);
+          blob = await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('conversion impossible')), 'image/jpeg', 0.92));
+          base = p.name.replace(/\.(heic|heif)$/i, '.jpg');
+        } catch (err) { notConverted++; console.error('Conversion HEIC', p.name, err); }
+      }
+      let name = base, k = 1;
+      while (used.has(name)) { const dot = base.lastIndexOf('.'); name = dot > 0 ? `${base.slice(0, dot)} (${++k})${base.slice(dot)}` : `${base} (${++k})`; }
       used.add(name);
       const fh = await dir.getFileHandle(name, { create: true });
       const w = await fh.createWritable();
-      await w.write(p.file);
+      await w.write(blob);
       await w.close();
     }
+    st.textContent = '';
     state.exported[g.client.id] = `${state.exportDir.name} / ${resultsDate()} / ${folder}`;
-    state.exportMsg = '';
+    state.exportMsg = notConverted ? `${notConverted} photo(s) HEIC copiée(s) sans conversion (l'aperçu peut manquer dans WhatsApp).` : '';
   }
   async function exportGroups(groups) {
     if (!window.showDirectoryPicker) {
@@ -7032,7 +7045,6 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         if (!window.open(g.client.waGroupLink, '_blank')) return blocked();
         markSent(cid, names);
       }
-      if (exportedNow) state.exportMsg = '';
       renderResults();
     } else if (act === 'rcpt') {
       const c = getClientById(btn.dataset.c);
