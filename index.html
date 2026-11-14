@@ -717,6 +717,8 @@
   .photos-add-panel { margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
   .photos-add-panel label { font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 4px; }
   .photos-add-panel select { width: 100%; }
+  .photos-thumb.is-sent img { opacity: 0.45; }
+  .photos-thumb .sent-badge { position: absolute; left: 4px; bottom: 4px; background: rgba(63,122,61,.92); color: #fff; font-size: 0.64rem; font-weight: 700; padding: 2px 6px; border-radius: 999px; }
   .photos-files { font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 8px; }
   .photos-msg { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 0.84rem; background: var(--bg); color: var(--text); }
   .photos-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
@@ -6596,7 +6598,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (shownDogs().some(needsEmbed)) { btn.disabled = true; await computeMissing(); }
     const refs = activeDogs().map(({ dog, key }) => ({ key, vecs: dogEmbedInfo(dog).items.map(i => unpackVec(i.v)) })).filter(r => r.vecs.length);
     if (!refs.length) { st.innerHTML = '<span class="bad">Aucune empreinte de chien : calcule-les d\'abord (étape 1).</span>'; return; }
-    btn.disabled = true; state.photos = []; state.msgs = {}; state.sent = {}; renderResults();
+    btn.disabled = true; state.photos = []; state.msgs = {}; state.analysing = true; state.photosDate = logDate(); renderResults();
     try {
       await loadModels(st);
       let i = 0;
@@ -6619,9 +6621,12 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         renderResults();
         await new Promise(r => setTimeout(r));
       }
+      state.analysing = false;
+      applyAuto(); renderResults();
       const ok = state.photos.filter(p => !p.error).length;
       st.innerHTML = `✓ ${ok} photo(s) analysée(s)` + (ok < state.photos.length ? ` · <span class="bad">${state.photos.length - ok} illisible(s)</span>` : '') + '.';
     } catch (err) { st.innerHTML = `<span class="bad">Erreur : ${esc(errText(err))}</span>`; console.error(err); }
+    state.analysing = false;
     btn.disabled = false;
   }
   $('photos-walk-run').addEventListener('click', analyse);
@@ -6683,10 +6688,60 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     return m;
   }
 
+  // ---------- journal des envois, conservé par date dans le Drive ----------
+  // settings.photoLog[AAAA-MM-JJ][clientId] = { dogs, files: [noms], sent: [noms], sentAt }
+  const logDate = () => $('photos-date').value;
+  const resultsDate = () => state.photosDate || logDate(); // date pour laquelle les photos affichées ont été analysées
+  const peekLog = (date, cid) => ((settings.photoLog || {})[date] || {})[cid] || null;
+  const sentSet = (date, cid) => new Set((peekLog(date, cid) || {}).sent || []);
+  let logTimer = null;
+  function persistLog() { clearTimeout(logTimer); logTimer = setTimeout(() => { saveSettings(); }, 1200); }
+  function ensureLog(date, cid) {
+    settings.photoLog = settings.photoLog || {};
+    settings.photoLog[date] = settings.photoLog[date] || {};
+    return settings.photoLog[date][cid] = settings.photoLog[date][cid] || { dogs: [], files: [], sent: [] };
+  }
+  function syncLog(groups) { // enregistre ce qui est attribué à chaque client pour la date
+    const date = resultsDate();
+    if (!date || state.analysing) return;
+    let changed = false;
+    groups.forEach(g => {
+      const names = g.photos.map(p => p.name);
+      const e = peekLog(date, g.client.id);
+      const same = e && JSON.stringify([...e.files].sort()) === JSON.stringify([...new Set([...names, ...e.sent])].sort()) && JSON.stringify(e.dogs) === JSON.stringify(g.dogNames);
+      if (same) return;
+      const entry = ensureLog(date, g.client.id);
+      entry.dogs = g.dogNames;
+      entry.files = [...new Set([...names, ...entry.sent])];
+      changed = true;
+    });
+    if (changed) persistLog();
+  }
+  const fmtDayFr = (d) => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const fmtHour = (iso) => iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  function renderLogCard(skipClientIds) { // suivi des clients de cette date qui ne sont pas (ou plus) à l'écran
+    const date = logDate();
+    const day = date && (settings.photoLog || {})[date];
+    if (!day) return '';
+    const rows = Object.entries(day).filter(([cid, e]) => !skipClientIds.has(cid) && e.files && e.files.length && getClientById(cid)).map(([cid, e]) => {
+      const c = getClientById(cid);
+      const todo = e.files.filter(f => !e.sent.includes(f));
+      const status = todo.length
+        ? `<span style="color:#c75a1c;font-weight:600;">⏳ ${todo.length} à envoyer</span> <span class="dim">: ${esc(todo.join(', '))}</span>`
+        : `<span class="photos-sent-tag">✓ ${e.sent.length} envoyée${e.sent.length > 1 ? 's' : ''}${e.sentAt ? ' à ' + fmtHour(e.sentAt) : ''}</span>`;
+      return `<div class="photos-pending-row"><strong>${esc((e.dogs || []).join(' & ') || '')}</strong> · ${esc(c.ownerName)}<br>${status}
+        ${todo.length ? `<br><button type="button" class="photos-btn ghost small" data-act="logsent" data-c="${esc(cid)}">Marquer comme envoyées</button>` : ''}</div>`;
+    });
+    if (!rows.length) return '';
+    return `<div class="photos-group"><div class="photos-group-head"><div class="photos-group-title">📋 Suivi du ${esc(fmtDayFr(date))}</div></div>
+      <div class="photos-note" style="margin:4px 0 0;">Mémorisé depuis une analyse précédente. Choisis à nouveau le dossier de photos pour les revoir, les comparer et les envoyer.</div>${rows.join('')}</div>`;
+  }
+
   function renderResults() {
     const box = $('photos-results');
-    if (!state.photos.length) { box.innerHTML = ''; return; }
+    if (!state.photos.length) { box.innerHTML = renderLogCard(new Set()); return; }
     const groups = buildGroups();
+    syncLog(groups);
     const pendingPhotos = state.photos.filter(p => !p.error && p.items.some(it => !it.choice));
     const errors = state.photos.filter(p => p.error);
     const allKeys = activeDogs().filter(x => dogEmbedInfo(x.dog).usable).map(x => x.key);
@@ -6694,7 +6749,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     const focused = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('photos-msg');
     if (focused) return;
 
-    let html = `<div class="photos-summary"><strong>${groups.reduce((n, g) => n + g.photos.length, 0)}</strong> photo(s) attribuée(s) à <strong>${groups.length}</strong> client(s)` +
+    let html = resultsDate() !== logDate() ? `<div class="photos-note" style="color:#c75a1c;font-weight:600;">Ces photos ont été analysées pour le ${esc(fmtDayFr(resultsDate()))}, alors que la date sélectionnée est le ${esc(fmtDayFr(logDate()))}. Relance l'analyse pour cette nouvelle date.</div>` : '';
+    html += `<div class="photos-summary"><strong>${groups.reduce((n, g) => n + g.photos.length, 0)}</strong> photo(s) attribuée(s) à <strong>${groups.length}</strong> client(s)` +
       (pendingPhotos.length ? ` · <strong style="color:#c75a1c;">${pendingPhotos.length} à vérifier</strong>` : '') + '</div>';
 
     if (pendingPhotos.length) {
@@ -6730,23 +6786,32 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     groups.forEach(g => {
       const m = groupMessage(g);
       const phone = formatPhoneForWhatsApp(g.client.phonePrimary || g.client.conjointPhone);
-      const sent = !!state.sent[g.client.id];
-      html += `<div class="photos-group${sent ? ' sent' : ''}" data-cid="${esc(g.client.id)}">
+      const sentNames = sentSet(resultsDate(), g.client.id);
+      const photosSorted = [...g.photos.filter(p => !sentNames.has(p.name)), ...g.photos.filter(p => sentNames.has(p.name))];
+      const todoPhotos = g.photos.filter(p => !sentNames.has(p.name));
+      const allSent = todoPhotos.length === 0;
+      const logEntry = peekLog(resultsDate(), g.client.id);
+      html += `<div class="photos-group${allSent ? ' sent' : ''}" data-cid="${esc(g.client.id)}">
         <div class="photos-group-head">
           <div class="photos-group-title">🐶 ${esc(g.dogNames.join(' & '))} · 👤 ${esc(g.client.ownerName)}</div>
-          <div class="photos-group-count">${g.photos.length} photo${g.photos.length > 1 ? 's' : ''}${sent ? ' · <span class="photos-sent-tag">✓ WhatsApp ouvert</span>' : ''}</div>
+          <div class="photos-group-count">${allSent ? `<span class="photos-sent-tag">✓ ${g.photos.length} envoyée${g.photos.length > 1 ? 's' : ''}${logEntry && logEntry.sentAt ? ' à ' + fmtHour(logEntry.sentAt) : ''}</span>`
+            : `${todoPhotos.length} à envoyer${todoPhotos.length < g.photos.length ? ` · <span class="photos-sent-tag">${g.photos.length - todoPhotos.length} déjà envoyée${g.photos.length - todoPhotos.length > 1 ? 's' : ''}</span>` : ''}`}</div>
         </div>
-        <div class="photos-thumbs">${g.photos.map(p => `<div class="photos-thumb"><img src="${p.thumb}" alt="${esc(p.name)}" title="${esc(p.name)}">
+        <div class="photos-thumbs">${photosSorted.map(p => `<div class="photos-thumb${sentNames.has(p.name) ? ' is-sent' : ''}"><img src="${p.thumb}" alt="${esc(p.name)}" title="${esc(p.name)}">
+          ${sentNames.has(p.name) ? '<span class="sent-badge">✓ envoyée</span>' : ''}
           <button type="button" class="tb rm" data-act="rm" data-p="${p.id}" data-c="${esc(g.client.id)}" title="Ce n'est pas le bon chien">✕</button>
           <button type="button" class="tb copy" data-act="copy" data-p="${p.id}" title="Copier la photo (puis coller dans WhatsApp)">⧉</button></div>`).join('')}</div>
-        <div class="photos-files">${g.photos.map(p => esc(p.name)).join(' · ')}</div>
+        <div class="photos-files">${todoPhotos.length ? `<strong>À joindre :</strong> ${todoPhotos.map(p => esc(p.name)).join(' · ')}` : ''}${todoPhotos.length && sentNames.size ? '<br>' : ''}${g.photos.some(p => sentNames.has(p.name)) ? `Déjà envoyées : ${g.photos.filter(p => sentNames.has(p.name)).map(p => esc(p.name)).join(' · ')}` : ''}</div>
         <textarea class="photos-msg" data-c="${esc(g.client.id)}">${esc(m.text)}</textarea>
         <div class="photos-actions">
-          <button type="button" class="photos-btn" data-act="wa" data-c="${esc(g.client.id)}" ${phone ? '' : 'disabled'}>${phone ? 'Ouvrir WhatsApp' : 'Pas de numéro'}</button>
+          <button type="button" class="photos-btn" data-act="wa" data-c="${esc(g.client.id)}" ${phone ? '' : 'disabled'}>${phone ? (allSent ? 'Renvoyer sur WhatsApp' : 'Ouvrir WhatsApp') : 'Pas de numéro'}</button>
+          ${!allSent ? `<button type="button" class="photos-btn ghost" data-act="marksent" data-c="${esc(g.client.id)}" title="À utiliser si tu les as déjà envoyées toi-même">Marquer comme envoyées</button>` : ''}
           <button type="button" class="photos-btn ghost" data-act="reroll" data-c="${esc(g.client.id)}">🎲 Autre message</button>
         </div>
       </div>`;
     });
+
+    html += renderLogCard(resultsDate() === logDate() ? new Set(groups.map(g => g.client.id)) : new Set());
 
     if (errors.length) {
       html += `<div class="photos-note"><span style="color:var(--warning);font-weight:600;">${errors.length} photo(s) illisible(s) ignorée(s) :</span><br>${errors.map(p => esc(p.name + ' — ' + p.error)).join('<br>')}</div>`;
@@ -6754,6 +6819,13 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     box.innerHTML = html;
   }
 
+  function markSent(cid, names, date) {
+    const entry = ensureLog(date || resultsDate(), cid);
+    entry.sent = [...new Set([...entry.sent, ...names])];
+    entry.files = [...new Set([...entry.files, ...names])];
+    entry.sentAt = new Date().toISOString();
+    persistLog();
+  }
   const resultsBox = $('photos-results');
   resultsBox.addEventListener('change', (ev) => {
     const sel = ev.target.closest('select[data-p]');
@@ -6777,6 +6849,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (act === 'rm') { // pas le bon chien : retour dans "À vérifier"
       const p = state.photos.find(x => x.id === btn.dataset.p);
       if (p) p.items.forEach(it => { if (it.choice && it.choice.split('|')[0] === btn.dataset.c) { it.choice = null; it.manual = true; } });
+      const le = p && peekLog(resultsDate(), btn.dataset.c);
+      if (le && !le.sent.includes(p.name)) { le.files = le.files.filter(f => f !== p.name); persistLog(); }
       renderResults();
     } else if (act === 'change') {
       const p = state.photos.find(x => x.id === btn.dataset.p);
@@ -6805,7 +6879,15 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       if (!phone) return;
       const m = groupMessage(g);
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(m.text)}`, '_blank');
-      state.sent[g.client.id] = true;
+      markSent(g.client.id, g.photos.map(p => p.name));
+      renderResults();
+    } else if (act === 'marksent') {
+      const g = buildGroups().find(x => x.client.id === btn.dataset.c);
+      if (g) markSent(g.client.id, g.photos.map(p => p.name));
+      renderResults();
+    } else if (act === 'logsent') {
+      const e = peekLog(logDate(), btn.dataset.c);
+      if (e) markSent(btn.dataset.c, e.files, logDate());
       renderResults();
     }
   });
@@ -6813,6 +6895,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   document.querySelector('.tab[data-panel="photos"]').addEventListener('click', () => {
     renderDogs();
     if (!$('photos-date').value) { $('photos-date').value = todayISO(); resetPresence(); } else renderDogs();
+    renderResults();
   });
   window.__photos = { state, packVec, unpackVec, VARIANTS, buildMessage, renderDogs, renderResults };
 })();
