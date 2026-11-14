@@ -693,6 +693,14 @@
   .photos-thumb .tb { position: absolute; top: 4px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; font-size: 0.72rem; cursor: pointer; line-height: 22px; padding: 0; }
   .photos-thumb .tb.copy { right: 4px; }
   .photos-thumb .tb.rm { left: 4px; }
+  .photos-presence { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .photos-presence label { font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 4px; }
+  .photos-presence input[type=date] { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-family: inherit; font-size: 0.84rem; color: var(--text); margin-bottom: 8px; }
+  .photos-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  .photos-chip { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.76rem; cursor: pointer; background: none; color: var(--text-dim); user-select: none; }
+  .photos-chip.on { background: #fdf1e7; border-color: #e6743f; color: #44413a; font-weight: 600; }
+  .photos-chip.off { opacity: 0.5; cursor: not-allowed; }
+  .photos-presence select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 0.78rem; font-family: inherit; }
   .photos-files { font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 8px; }
   .photos-msg { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 0.84rem; background: var(--bg); color: var(--text); }
   .photos-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
@@ -1665,6 +1673,13 @@
         <label class="photos-btn" for="photos-walk-input">Choisir un dossier</label>
         <input type="file" id="photos-walk-input" webkitdirectory multiple>
         <button type="button" class="photos-btn" id="photos-walk-run" disabled>Analyser les photos</button>
+      </div>
+      <div class="photos-presence">
+        <label for="photos-date">Date de la balade</label>
+        <input type="date" id="photos-date">
+        <div class="photos-note" id="photos-present-note" style="margin:0;"></div>
+        <div class="photos-chips" id="photos-present-chips"></div>
+        <select id="photos-present-add" title="Ajouter un chien qui n'est pas prévu ce jour-là"></select>
       </div>
       <details class="photos-sliders">
         <summary>Réglages de la reconnaissance</summary>
@@ -6127,7 +6142,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const esc = (t) => escapeHtml(String(t == null ? '' : t));
 
   let tf = null, detector = null, embedder = null;
-  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1 };
+  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set() };
 
   // ---------- fichiers / images ----------
   const isImage = (f) => IMG_EXT.includes(f.name.split('.').pop().toLowerCase()) && !f.name.startsWith('.');
@@ -6316,6 +6331,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       }
       await saveClients();
       renderDogs();
+      if ($('photos-date').value) resetPresence();
       st.innerHTML = `✓ ${todo.length - failed.length} empreinte(s) enregistrée(s).` + (failed.length ? `<br><span class="bad">Échec : ${esc(failed.join(' ; '))}</span>` : '');
     } catch (err) { st.innerHTML = `<span class="bad">Erreur : ${esc(errText(err))}</span>`; console.error(err); }
     btn.disabled = false;
@@ -6364,13 +6380,68 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
 
   // ---------- analyse du dossier du jour ----------
   const thr = () => +$('photos-thr').value / 100, mar = () => +$('photos-mar').value / 100;
+  // Chiens présents ce jour-là (planning) : la reconnaissance se concentre sur eux.
+  // Si aucun n'est sélectionné, tous les chiens sont comparés.
+  const presentSet = () => state.present.size ? state.present : null;
+  function ranked(it) { // candidats triés : présents d'abord (par score), puis les autres
+    const P = presentSet();
+    if (!P) return { pres: it.scores, abs: [] };
+    return { pres: it.scores.filter(s => P.has(s.key)), abs: it.scores.filter(s => !P.has(s.key)) };
+  }
   function isSure(it) {
-    const [a, b] = it.scores;
-    return !!a && a.score >= thr() && (!b || a.score - b.score >= mar());
+    const { pres, abs } = ranked(it);
+    const a = pres[0], b = pres[1], c = abs[0];
+    if (!a || a.score < thr()) return false;
+    if (b && a.score - b.score < mar()) return false;
+    if (c && c.score - a.score >= mar()) return false; // un chien non prévu ce jour-là ressemble nettement plus : à vérifier
+    return true;
   }
   function applyAuto() { // (re)calcule l'attribution automatique, sans écraser les choix manuels
-    state.photos.forEach(p => p.items.forEach(it => { if (!it.manual) it.choice = isSure(it) ? it.scores[0].key : null; }));
+    state.photos.forEach(p => p.items.forEach(it => { if (!it.manual) it.choice = isSure(it) ? ranked(it).pres[0].key : null; }));
   }
+
+  // ---------- chiens prévus ce jour-là ----------
+  function scheduledOn(dateStr) {
+    if (!dateStr) return [];
+    const code = DOW_CODE_BY_JS_DAY[new Date(dateStr + 'T00:00:00').getDay()];
+    return activeDogs().filter(({ dog }) => dog.isTrial ? dog.trialDate === dateStr : (!!code && (dog.walkDays || []).includes(code)));
+  }
+  function resetPresence() { // sélectionne par défaut les chiens du planning avec empreinte
+    state.present = new Set(scheduledOn($('photos-date').value).filter(x => dogEmbedInfo(x.dog).usable).map(x => x.key));
+    renderPresence();
+  }
+  function renderPresence() {
+    const date = $('photos-date').value;
+    const sched = scheduledOn(date);
+    const schedKeys = new Set(sched.map(x => x.key));
+    const extras = [...state.present].filter(k => !schedKeys.has(k)).map(k => activeDogs().find(x => x.key === k)).filter(Boolean);
+    const all = [...sched, ...extras];
+    $('photos-present-note').textContent = !date ? '' : all.length
+      ? 'Chiens attendus ce jour-là d\'après le planning (décoche ceux qui ne sont pas venus) : l\'IA ne cherche que parmi eux.'
+      : 'Aucun chien prévu ce jour-là : tous les chiens seront comparés.';
+    $('photos-present-chips').innerHTML = all.map(({ client, dog, key }) => {
+      const usable = dogEmbedInfo(dog).usable;
+      return `<span class="photos-chip ${usable ? (state.present.has(key) ? 'on' : '') : 'off'}" data-key="${esc(key)}" title="${usable ? '' : 'Pas d\'empreinte pour ce chien'}">${state.present.has(key) && usable ? '✓ ' : ''}${esc(dog.name)}${usable ? '' : ' (sans empreinte)'}</span>`;
+    }).join('');
+    const others = activeDogs().filter(x => !schedKeys.has(x.key) && !state.present.has(x.key) && dogEmbedInfo(x.dog).usable);
+    const sel = $('photos-present-add');
+    sel.innerHTML = '<option value="">+ Ajouter un autre chien…</option>' + others.map(x => `<option value="${esc(x.key)}">${esc(x.dog.name)} (${esc(ownerFirstName(x.client))})</option>`).join('');
+    sel.style.display = others.length ? '' : 'none';
+  }
+  function presenceChanged() { applyAuto(); renderPresence(); renderResults(); }
+  $('photos-present-chips').addEventListener('click', (ev) => {
+    const chip = ev.target.closest('.photos-chip');
+    if (!chip || chip.classList.contains('off')) return;
+    const k = chip.dataset.key;
+    if (state.present.has(k)) state.present.delete(k); else state.present.add(k);
+    presenceChanged();
+  });
+  $('photos-present-add').addEventListener('change', (ev) => {
+    if (!ev.target.value) return;
+    state.present.add(ev.target.value);
+    presenceChanged();
+  });
+  $('photos-date').addEventListener('change', () => { resetPresence(); applyAuto(); renderResults(); });
   ['photos-thr', 'photos-mar'].forEach(id => $(id).addEventListener('input', () => {
     $('photos-thr-val').textContent = $('photos-thr').value; $('photos-mar-val').textContent = $('photos-mar').value;
     applyAuto(); renderResults();
@@ -6378,6 +6449,11 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
 
   $('photos-walk-input').addEventListener('change', (ev) => {
     state.files = [...ev.target.files].filter(isImage).sort((a, b) => a.name.localeCompare(b.name));
+    // date des photos = jour le plus fréquent parmi les dates des fichiers
+    const counts = {};
+    state.files.forEach(f => { const d = new Date(f.lastModified); const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; counts[k] = (counts[k] || 0) + 1; });
+    const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    if (best) { $('photos-date').value = best[0]; resetPresence(); }
     $('photos-walk-status').textContent = `${state.files.length} photo${state.files.length > 1 ? 's' : ''} trouvée${state.files.length > 1 ? 's' : ''}.`;
     $('photos-walk-run').disabled = state.files.length === 0;
   });
@@ -6510,7 +6586,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       pendingPhotos.forEach(p => {
         p.items.forEach((it, ii) => {
           if (it.choice) return;
-          const top3 = it.scores.slice(0, 3);
+          const rk = ranked(it);
+          const top3 = [...rk.pres, ...rk.abs].slice(0, 3);
           const rest = allKeys.filter(k => !top3.some(t => t.key === k));
           html += `<div class="photos-pending-item">
             <img src="${p.thumb}" alt="">
@@ -6607,7 +6684,10 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     }
   });
 
-  document.querySelector('.tab[data-panel="photos"]').addEventListener('click', renderDogs);
+  document.querySelector('.tab[data-panel="photos"]').addEventListener('click', () => {
+    renderDogs();
+    if (!$('photos-date').value) { $('photos-date').value = todayISO(); resetPresence(); } else renderPresence();
+  });
   window.__photos = { state, packVec, unpackVec, VARIANTS, buildMessage, renderDogs, renderResults };
 })();
 </script>
