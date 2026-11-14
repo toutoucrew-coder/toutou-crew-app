@@ -719,6 +719,8 @@
   .photos-add-panel select { width: 100%; }
   .photos-thumb.is-sent img { opacity: 0.45; }
   .photos-thumb .sent-badge { position: absolute; left: 4px; bottom: 4px; background: rgba(63,122,61,.92); color: #fff; font-size: 0.64rem; font-weight: 700; padding: 2px 6px; border-radius: 999px; }
+  .photos-rcpt { margin: 8px 0; font-size: 0.78rem; }
+  .photos-rcpt .dim { color: var(--text-dim); }
   .photos-files { font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 8px; }
   .photos-msg { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 0.84rem; background: var(--bg); color: var(--text); }
   .photos-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
@@ -6175,7 +6177,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const esc = (t) => escapeHtml(String(t == null ? '' : t));
 
   let tf = null, detector = null, embedder = null;
-  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set(), extra: new Set(), addOpen: false, exportDir: null, exported: {}, exportMsg: '' };
+  const state = { files: [], photos: [], msgs: {}, sent: {}, lastVariant: -1, present: new Set(), extra: new Set(), addOpen: false, exportDir: null, exported: {}, exportMsg: '', bothStep: {}, groupEdit: {}, groupNote: {} };
 
   // ---------- fichiers / images ----------
   const isImage = (f) => IMG_EXT.includes(f.name.split('.').pop().toLowerCase()) && !f.name.startsWith('.');
@@ -6680,6 +6682,24 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       return g;
     }).sort((a, b) => ownerFirstName(a.client).localeCompare(ownerFirstName(b.client)));
   }
+  // ---------- destinataires : propriétaire, conjoint, les deux, ou un groupe WhatsApp ----------
+  const conjFirstName = (c) => (c.conjointPrenom || '').trim().split(/\s+/)[0] || 'Conjoint';
+  function recipientOptions(c) {
+    const p = formatPhoneForWhatsApp(c.phonePrimary), q = formatPhoneForWhatsApp(c.conjointPhone), o = [];
+    if (p) o.push({ k: 'principal', label: ownerFirstName(c) || 'Principal', phone: p });
+    if (q) o.push({ k: 'conjoint', label: conjFirstName(c), phone: q });
+    if (p && q) o.push({ k: 'both', label: 'Les deux (2 conversations)' });
+    if (c.waGroupLink) o.push({ k: 'group', label: 'Groupe WhatsApp' });
+    return o;
+  }
+  const currentRecipient = (c) => { const o = recipientOptions(c); return o.find(x => x.k === c.photoRecipient) || o[0] || null; };
+  function textFor(g, kind) { // le message est écrit pour le propriétaire ; on remplace son prénom pour les autres destinataires
+    const text = groupMessage(g).text, c = g.client, p = ownerFirstName(c), q = conjFirstName(c);
+    const i = p ? text.indexOf(p) : -1;
+    if (i < 0 || kind === 'principal') return text;
+    const who = kind === 'conjoint' ? q : kind === 'group' ? `${p} et ${q}` : p;
+    return text.slice(0, i) + who + text.slice(i + p.length);
+  }
   function groupMessage(g) {
     const cid = g.client.id, names = g.dogNames.join('|');
     let m = state.msgs[cid];
@@ -6746,7 +6766,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     const errors = state.photos.filter(p => p.error);
     const allKeys = activeDogs().filter(x => dogEmbedInfo(x.dog).usable).map(x => x.key);
     // ne reconstruit pas l'interface pendant qu'on saisit un message
-    const focused = document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('photos-msg');
+    const focused = document.activeElement && document.activeElement.classList && (document.activeElement.classList.contains('photos-msg') || document.activeElement.classList.contains('photos-group-input'));
     if (focused) return;
 
     let html = resultsDate() !== logDate() ? `<div class="photos-note" style="color:#c75a1c;font-weight:600;">Ces photos ont été analysées pour le ${esc(fmtDayFr(resultsDate()))}, alors que la date sélectionnée est le ${esc(fmtDayFr(logDate()))}. Relance l'analyse pour cette nouvelle date.</div>` : '';
@@ -6787,7 +6807,9 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
 
     groups.forEach(g => {
       const m = groupMessage(g);
-      const phone = formatPhoneForWhatsApp(g.client.phonePrimary || g.client.conjointPhone);
+      const rcptOpts = recipientOptions(g.client);
+      const rcpt = currentRecipient(g.client);
+      const step = state.bothStep[g.client.id] || 0;
       const sentNames = sentSet(resultsDate(), g.client.id);
       const photosSorted = [...g.photos.filter(p => !sentNames.has(p.name)), ...g.photos.filter(p => sentNames.has(p.name))];
       const todoPhotos = g.photos.filter(p => !sentNames.has(p.name));
@@ -6805,9 +6827,18 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
           <button type="button" class="tb copy" data-act="copy" data-p="${p.id}" title="Copier la photo (puis coller dans WhatsApp)">⧉</button></div>`).join('')}</div>
         <div class="photos-files">${todoPhotos.length ? `<strong>À joindre :</strong> ${todoPhotos.map(p => esc(p.name)).join(' · ')}` : ''}${todoPhotos.length && sentNames.size ? '<br>' : ''}${g.photos.some(p => sentNames.has(p.name)) ? `Déjà envoyées : ${g.photos.filter(p => sentNames.has(p.name)).map(p => esc(p.name)).join(' · ')}` : ''}</div>
         ${state.exported[g.client.id] ? `<div class="photos-files" style="color:var(--positive);">📁 Dossier prêt : ${esc(state.exported[g.client.id])}<br><span style="color:var(--text-dim);">Dans la conversation WhatsApp : 📎 → Photos et vidéos → ouvre ce dossier → Cmd + A → Ouvrir.</span></div>` : ''}
+        ${(rcptOpts.length > 1 || g.client.conjointPhone || g.client.waGroupLink || state.groupEdit[g.client.id]) ? `<div class="photos-rcpt"><span class="dim">Envoyer à :</span>
+          <div class="photos-chips">${rcptOpts.map(o => `<span class="photos-chip${rcpt && rcpt.k === o.k ? ' on' : ''}" data-act="rcpt" data-c="${esc(g.client.id)}" data-k="${o.k}">${esc(o.label)}</span>`).join('')}
+          ${!g.client.waGroupLink ? `<span class="photos-chip" data-act="addgroup" data-c="${esc(g.client.id)}">+ Groupe WhatsApp</span>` : `<span class="photos-chip" data-act="rmgroup" data-c="${esc(g.client.id)}" title="Retirer le lien du groupe">✕ groupe</span>`}</div>
+          ${state.groupEdit[g.client.id] ? `<div class="photos-row"><input type="text" class="photos-group-input" data-c="${esc(g.client.id)}" placeholder="Lien du groupe : https://chat.whatsapp.com/…" style="flex:1;min-width:200px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:0.8rem;"><button type="button" class="photos-btn small" data-act="savegroup" data-c="${esc(g.client.id)}">Enregistrer</button></div>
+            <div class="photos-note" style="margin:4px 0 0;">Dans WhatsApp : ouvre le groupe → Infos du groupe → Inviter via un lien → Copier le lien. Le message ne peut pas être prérempli dans un groupe : l'appli le copie pour que tu le colles.</div>` : ''}
+          ${state.groupNote[g.client.id] ? `<div class="photos-note" style="margin:4px 0 0;color:var(--positive);">${esc(state.groupNote[g.client.id])}</div>` : ''}</div>` : ''}
         <textarea class="photos-msg" data-c="${esc(g.client.id)}">${esc(m.text)}</textarea>
         <div class="photos-actions">
-          <button type="button" class="photos-btn" data-act="wa" data-c="${esc(g.client.id)}" ${phone ? '' : 'disabled'}>${phone ? (allSent ? 'Renvoyer sur WhatsApp' : 'Ouvrir WhatsApp') : 'Pas de numéro'}</button>
+          <button type="button" class="photos-btn" data-act="wa" data-c="${esc(g.client.id)}" ${rcpt ? '' : 'disabled'}>${!rcpt ? 'Pas de numéro'
+            : rcpt.k === 'both' ? `${step + 1}/2 · WhatsApp ${esc(dePhrase([step === 0 ? ownerFirstName(g.client) : conjFirstName(g.client)]))}`
+            : rcpt.k === 'group' ? 'Copier le message et ouvrir le groupe'
+            : (allSent ? 'Renvoyer sur WhatsApp' : 'Ouvrir WhatsApp')}</button>
           ${!allSent ? `<button type="button" class="photos-btn ghost" data-act="export" data-c="${esc(g.client.id)}" title="Copie les photos à envoyer dans un dossier de ton ordinateur">📁 Préparer le dossier</button>` : ''}
           ${!allSent ? `<button type="button" class="photos-btn ghost" data-act="marksent" data-c="${esc(g.client.id)}" title="À utiliser si tu les as déjà envoyées toi-même">Marquer comme envoyées</button>` : ''}
           <button type="button" class="photos-btn ghost" data-act="reroll" data-c="${esc(g.client.id)}">🎲 Autre message</button>
@@ -6913,11 +6944,39 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     } else if (act === 'wa') {
       const g = buildGroups().find(x => x.client.id === btn.dataset.c);
       if (!g) return;
-      const phone = formatPhoneForWhatsApp(g.client.phonePrimary || g.client.conjointPhone);
-      if (!phone) return;
-      const m = groupMessage(g);
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(m.text)}`, '_blank');
-      markSent(g.client.id, g.photos.map(p => p.name));
+      const rcpt = currentRecipient(g.client);
+      if (!rcpt) return;
+      const names = g.photos.map(p => p.name), cid = g.client.id;
+      const open = (phone, kind) => window.open(`https://wa.me/${phone}?text=${encodeURIComponent(textFor(g, kind))}`, '_blank');
+      if (rcpt.k === 'principal' || rcpt.k === 'conjoint') { open(rcpt.phone, rcpt.k); markSent(cid, names); }
+      else if (rcpt.k === 'both') {
+        const opts = recipientOptions(g.client);
+        if (!state.bothStep[cid]) { open(opts.find(o => o.k === 'principal').phone, 'principal'); state.bothStep[cid] = 1; }
+        else { open(opts.find(o => o.k === 'conjoint').phone, 'conjoint'); state.bothStep[cid] = 0; markSent(cid, names); }
+      } else if (rcpt.k === 'group') {
+        try { await navigator.clipboard.writeText(textFor(g, 'group')); state.groupNote[cid] = 'Message copié : colle-le dans le groupe (Cmd + V).'; }
+        catch (e) { state.groupNote[cid] = 'Copie impossible : copie le message ci-dessous à la main.'; }
+        window.open(g.client.waGroupLink, '_blank');
+        markSent(cid, names);
+      }
+      renderResults();
+    } else if (act === 'rcpt') {
+      const c = getClientById(btn.dataset.c);
+      if (c) { c.photoRecipient = btn.dataset.k; state.bothStep[c.id] = 0; state.groupNote[c.id] = ''; await saveClients(); }
+      renderResults();
+    } else if (act === 'addgroup') {
+      state.groupEdit[btn.dataset.c] = true; renderResults();
+    } else if (act === 'savegroup') {
+      const c = getClientById(btn.dataset.c);
+      const input = resultsBox.querySelector(`.photos-group-input[data-c="${btn.dataset.c}"]`);
+      const link = input ? input.value.trim() : '';
+      if (!c) return;
+      if (!/^https:\/\/chat\.whatsapp\.com\/\S+$/.test(link)) { state.groupNote[c.id] = 'Lien invalide : il doit commencer par https://chat.whatsapp.com/'; renderResults(); return; }
+      c.waGroupLink = link; c.photoRecipient = 'group'; state.groupEdit[c.id] = false; state.groupNote[c.id] = '';
+      await saveClients(); renderResults();
+    } else if (act === 'rmgroup') {
+      const c = getClientById(btn.dataset.c);
+      if (c) { delete c.waGroupLink; if (c.photoRecipient === 'group') delete c.photoRecipient; await saveClients(); }
       renderResults();
     } else if (act === 'export') {
       const g = buildGroups().find(x => x.client.id === btn.dataset.c);
