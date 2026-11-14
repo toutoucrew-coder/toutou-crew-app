@@ -2476,8 +2476,8 @@ function clientLabel(client) {
 }
 function clientPhoto(client) {
   if (!client) return null;
-  const withPhoto = (client.dogs || []).find(d => d.photo);
-  return withPhoto ? withPhoto.photo : null;
+  const withPhoto = (client.dogs || []).find(d => d.photo || d.faceThumb);
+  return withPhoto ? (withPhoto.photo || withPhoto.faceThumb) : null;
 }
 function getClientById(id) {
   return clients.find(c => c.id === id) || null;
@@ -6298,7 +6298,13 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   async function embedDogFromCanvas(canvas) {
     const dets = await detectDogs(canvas);
     const best = dets.sort((a, b) => boxArea(b.box) - boxArea(a.box))[0];
-    return embedCanvas(cropSquare(canvas, best ? best.box : wholeBox(canvas)));
+    const crop = cropSquare(canvas, best ? best.box : wholeBox(canvas));
+    return { vec: await embedCanvas(crop), crop, detected: !!best };
+  }
+  function faceThumb(crop) { // petite vignette (tête du chien) pour l'avatar, ~3 Ko
+    const t = document.createElement('canvas'); t.width = t.height = 96;
+    t.getContext('2d').drawImage(crop, 0, 0, 96, 96);
+    return t.toDataURL('image/jpeg', 0.75);
   }
 
   // ---------- liste des chiens ----------
@@ -6340,7 +6346,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       const isExtra = !schedKeys.has(key);
       return `<div class="photos-dog-card${on ? ' on' : ''}" data-key="${esc(key)}">
         <span class="photos-check">${on ? '✓' : ''}</span>
-        <div class="photos-avatar">${dog.photo ? `<img src="${dog.photo}" alt="">` : '🐶'}</div>
+        <div class="photos-avatar">${(dog.photo || dog.faceThumb) ? `<img src="${dog.photo || dog.faceThumb}" alt="">` : '🐶'}</div>
         <div class="photos-dog-name">${esc(dog.name)}</div>
         <div class="photos-dog-owner">${esc(client.ownerName)}</div>
         ${isExtra ? '<div class="tag">ajouté à la main</div>' : ''}
@@ -6409,7 +6415,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       for (const { dog } of todo) {
         st.textContent = `Empreintes : ${++i}/${todo.length} (${dog.name})`;
         try {
-          const vec = await embedDogFromCanvas(await dataUrlToCanvas(dog.photo));
+          const { vec } = await embedDogFromCanvas(await dataUrlToCanvas(dog.photo));
           const keep = dogEmbedInfo(dog).items.filter(it => it.k === 'x');
           dog.embeds = { model: MODEL, items: [{ k: 'p', h: hashStr(dog.photo), v: packVec(vec) }, ...keep] };
         } catch (err) { failed.push(`${dog.name} (${errText(err)})`); console.error(err); }
@@ -6435,7 +6441,9 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       for (const f of imgs) {
         st.textContent = `Empreinte ${++i}/${imgs.length} pour ${dog.name}…`;
         try {
-          const vec = await embedDogFromCanvas(await fileToCanvas(f));
+          const { vec, crop, detected } = await embedDogFromCanvas(await fileToCanvas(f));
+          // sans photo de profil, la tête du chien (détectée sur la photo ajoutée) sert d'avatar
+          if (!dog.photo && (!dog.faceThumb || (detected && !dog.faceThumbDetected))) { dog.faceThumb = faceThumb(crop); dog.faceThumbDetected = detected; }
           const cur = dogEmbedInfo(dog).items;
           const items = [...cur, { k: 'x', v: packVec(vec) }];
           while (items.filter(it => it.k === 'x').length > MAX_EXTRA_REFS) items.splice(items.findIndex(it => it.k === 'x'), 1);
@@ -6460,6 +6468,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
       const found = activeDogs().find(x => x.key === clr.dataset.clearKey);
       if (!found || !found.dog.embeds) return;
       found.dog.embeds.items = found.dog.embeds.items.filter(it => it.k !== 'x');
+      delete found.dog.faceThumb; delete found.dog.faceThumbDetected;
       await saveClients();
       renderDogs();
       return;
