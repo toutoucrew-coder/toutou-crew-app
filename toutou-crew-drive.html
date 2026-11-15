@@ -754,6 +754,12 @@
   .ws-btn.muted { opacity: 0.6; font-weight: 500; }
   .ws-btn:disabled { opacity: 0.45; cursor: default; }
   .ws-hint { font-size: 0.76rem; color: var(--text-dim); text-align: center; }
+  /* pas d'effet de survol dans le tiroir : sur mobile il « colle » et oblige à toucher deux fois */
+  .ws button, .ws a { -webkit-tap-highlight-color: transparent; transition: none; }
+  .ws .ws-row-head:hover { background: none; }
+  .ws .ws-btn:hover { background: var(--surface); }
+  .ws .ws-btn.primary:hover { background: var(--accent); }
+  .ws .ws-btn:disabled:hover { background: var(--surface-2); }
   .ws-note { font-size: 0.8rem; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
   .photos-msg { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 0.84rem; background: var(--bg); color: var(--text); }
   .photos-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
