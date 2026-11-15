@@ -735,7 +735,6 @@
   .ws-handle { flex: none; height: 66px; padding: 8px 16px 0; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; text-align: center; }
   .ws-grip { width: 42px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 8px; }
   .ws-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.98rem; }
-  .ws-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 1px; }
   .ws-body { overflow-y: auto; padding: 4px 12px 16px; -webkit-overflow-scrolling: touch; }
   .ws-row { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); margin-top: 8px; overflow: hidden; }
   .ws-row-head { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: none; border: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
@@ -2231,7 +2230,6 @@
     <div class="ws-handle" id="ws-handle" role="button" aria-label="Balade du jour">
       <div class="ws-grip"></div>
       <div class="ws-title" id="ws-title"></div>
-      <div class="ws-sub" id="ws-sub"></div>
     </div>
     <div class="ws-body" id="ws-body"></div>
   </div>
@@ -7165,7 +7163,6 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const $ = (id) => document.getElementById(id);
   const PICK = [450, 570];   // 7h30 – 9h30 : récupération
   const DROP = [690, 840];   // 11h30 – 14h00 : retour à la maison
-  const TEST_MODE = true;    // TEMPORAIRE : à remettre à false (ou supprimer) après les essais
   let openRow = null, sheetOpen = false;
   const notes = {};          // clientId -> { text, secondPhone, secondText }
 
@@ -7186,13 +7183,6 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         : !!code && (d.walkDays || []).includes(code) && (!d.subscriptionSince || d.subscriptionSince <= date));
       if (dogs.length) out.push({ client: c, dogs });
     });
-    // MODE TEST TEMPORAIRE : si rien n'est prévu aujourd'hui (week-end), on montre tous les chiens abonnés
-    if (TEST_MODE && !out.length) {
-      clients.filter(c => !c.archived).forEach(c => {
-        const dogs = (c.dogs || []).filter(d => d.isTrial || (d.walkDays || []).length > 0);
-        if (dogs.length) out.push({ client: c, dogs });
-      });
-    }
     return out.sort((a, b) => (a.client.ownerName || '').localeCompare(b.client.ownerName || ''));
   }
   const logOf = (cid) => ((settings.walkLog || {})[todayISO()] || {})[cid] || {};
@@ -7267,8 +7257,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     sheet.hidden = false; document.body.classList.add('has-ws');
     sheet.classList.toggle('open', sheetOpen);
     const nDogs = hs.reduce((s, h) => s + h.dogs.length, 0);
-    $('ws-title').textContent = `🐾 Balade du jour${TEST_MODE ? ' (test)' : ''} · ${nDogs} chien${nDogs > 1 ? 's' : ''}`;
-    $('ws-sub').textContent = sheetOpen ? '' : 'tire vers le haut ▲';
+    $('ws-title').textContent = `🐾 Balade du jour · ${nDogs} chien${nDogs > 1 ? 's' : ''}`;
     const pickNow = inWin(PICK), dropNow = inWin(DROP);
     $('ws-body').innerHTML = hs.map(h => {
       const c = h.client, id = c.id, lg = logOf(id), r = recipient(c), nt = notes[id];
@@ -7289,8 +7278,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
           ${h.dogs.filter(d => !d.photo).map(d => `<label class="ws-btn">📷 ${d.faceThumb ? 'Mettre une vraie photo de' : 'Ajouter une photo de'} ${escapeHtml(d.name)}<input type="file" accept="image/*" hidden data-dog-photo="${id}|${d.id}"></label>`).join('')}
           ${btn('pick', `🐕 J'ai récupéré ${joinNames(names)}`, lg.pick, pickNow)}
           ${btn('drop', `🏠 J'ai redéposé ${joinNames(names)}`, lg.drop, dropNow)}
-          ${r ? `<div class="ws-hint">${pickNow ? 'Créneau récupération (7h30–9h30)' : dropNow ? 'Créneau retour (11h30–14h)' : 'Hors créneau : envoi possible quand même'} · message à ${escapeHtml(r.addr)}, tu peux le modifier dans WhatsApp</div>`
-               : '<div class="ws-hint">Aucun numéro WhatsApp sur la fiche de ce client.</div>'}
+          ${r ? '' : '<div class="ws-hint">Aucun numéro WhatsApp sur la fiche de ce client.</div>'}
           ${nt ? `<div class="ws-note">${escapeHtml(nt.text)}${nt.secondPhone ? ` <a href="${waUrl(nt.secondPhone, nt.secondText)}" target="_blank" rel="noopener">Ouvrir la 2ᵉ conversation</a>` : ''}</div>` : ''}
         </div>
       </div>`;
