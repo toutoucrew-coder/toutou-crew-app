@@ -724,6 +724,37 @@
   .photos-rcpt { margin: 8px 0; font-size: 0.78rem; }
   .photos-rcpt .dim { color: var(--text-dim); }
   .photos-files { font-size: 0.72rem; color: var(--text-dim); word-break: break-all; margin-bottom: 8px; }
+  /* ---------- Panneau « Balade du jour » (tiroir en bas de l'écran) ---------- */
+  body.has-ws { padding-bottom: 84px; }
+  .ws { position: fixed; left: 0; right: 0; bottom: 0; z-index: 16; pointer-events: none; }
+  .ws[hidden] { display: none; }
+  .ws-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+  .ws.open .ws-backdrop { opacity: 1; pointer-events: auto; }
+  .ws-panel { position: relative; pointer-events: auto; max-width: 560px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-bottom: none; border-radius: 18px 18px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,0.14); display: flex; flex-direction: column; max-height: 78vh; transform: translateY(calc(100% - 66px - env(safe-area-inset-bottom, 0px))); transition: transform 0.28s ease; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .ws.open .ws-panel { transform: translateY(0); }
+  .ws-handle { flex: none; height: 66px; padding: 8px 16px 0; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; text-align: center; }
+  .ws-grip { width: 42px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 8px; }
+  .ws-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.98rem; }
+  .ws-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 1px; }
+  .ws-body { overflow-y: auto; padding: 4px 12px 16px; -webkit-overflow-scrolling: touch; }
+  .ws-row { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); margin-top: 8px; overflow: hidden; }
+  .ws-row-head { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: none; border: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+  .ws-ava { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; overflow: hidden; }
+  .ws-ava img { width: 100%; height: 100%; object-fit: cover; }
+  .ws-names { flex: 1; min-width: 0; }
+  .ws-dogs { font-weight: 600; font-size: 0.95rem; }
+  .ws-owner { font-size: 0.78rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ws-chips { flex: none; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+  .ws-chip { font-size: 0.7rem; font-weight: 600; border-radius: 999px; padding: 2px 8px; background: var(--surface-2); color: var(--text-dim); white-space: nowrap; }
+  .ws-chip.done { background: #dcebd5; color: var(--positive); }
+  .ws-actions { display: none; flex-direction: column; gap: 7px; padding: 0 10px 10px; }
+  .ws-row.open .ws-actions { display: flex; }
+  .ws-btn { display: block; width: 100%; text-align: center; text-decoration: none; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .ws-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--btn-text); }
+  .ws-btn.muted { opacity: 0.6; font-weight: 500; }
+  .ws-btn:disabled { opacity: 0.45; cursor: default; }
+  .ws-hint { font-size: 0.76rem; color: var(--text-dim); text-align: center; }
+  .ws-note { font-size: 0.8rem; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
   .photos-msg { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 0.84rem; background: var(--bg); color: var(--text); }
   .photos-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
   .photos-sent-tag { font-size: 0.76rem; color: var(--positive); font-weight: 600; }
@@ -2188,6 +2219,17 @@
 
 <div id="invoice-print-area" class="invoice-print-only"></div>
 
+<div class="ws" id="walk-sheet" hidden>
+  <div class="ws-backdrop" id="ws-backdrop"></div>
+  <div class="ws-panel">
+    <div class="ws-handle" id="ws-handle" role="button" aria-label="Balade du jour">
+      <div class="ws-grip"></div>
+      <div class="ws-title" id="ws-title"></div>
+      <div class="ws-sub" id="ws-sub"></div>
+    </div>
+    <div class="ws-body" id="ws-body"></div>
+  </div>
+</div>
 <script>
 // ============================================================
 // Stockage Google Drive — remplace window.storage (Claude) par un
@@ -7109,6 +7151,166 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     renderResults();
   });
   window.__photos = { state, packVec, unpackVec, VARIANTS, buildMessage, renderDogs, renderResults, hashStr, persistCache, analyse };
+})();
+</script>
+<script>
+// ============ BALADE DU JOUR : tiroir en bas d'écran (adresse, « récupéré », « redéposé ») ============
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const PICK = [450, 570];   // 7h30 – 9h30 : récupération
+  const DROP = [690, 840];   // 11h30 – 14h00 : retour à la maison
+  let openRow = null, sheetOpen = false;
+  const notes = {};          // clientId -> { text, secondPhone, secondText }
+
+  const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+  const inWin = (w) => { const m = nowMin(); return m >= w[0] && m <= w[1]; };
+  const hhmm = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const hi = () => (new Date().getHours() < 18 ? 'Bonjour' : 'Bonsoir');
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+
+  // chiens prévus aujourd'hui, regroupés par foyer
+  function todayHouseholds() {
+    const date = todayISO();
+    const code = DOW_CODE_BY_JS_DAY[new Date(date + 'T00:00:00').getDay()];
+    if (absenceForDate(date)) return [];
+    const out = [];
+    clients.filter(c => !c.archived).forEach(c => {
+      const dogs = (c.dogs || []).filter(d => d.isTrial ? d.trialDate === date
+        : !!code && (d.walkDays || []).includes(code) && (!d.subscriptionSince || d.subscriptionSince <= date));
+      if (dogs.length) out.push({ client: c, dogs });
+    });
+    return out.sort((a, b) => (a.client.ownerName || '').localeCompare(b.client.ownerName || ''));
+  }
+  const logOf = (cid) => ((settings.walkLog || {})[todayISO()] || {})[cid] || {};
+  async function setLog(cid, field) {
+    settings.walkLog = settings.walkLog || {};
+    const t = todayISO();
+    (settings.walkLog[t] = settings.walkLog[t] || {})[cid] = { ...logOf(cid), [field]: hhmm() };
+    const limit = new Date(); limit.setDate(limit.getDate() - 45);
+    const lim = `${limit.getFullYear()}-${String(limit.getMonth() + 1).padStart(2, '0')}-${String(limit.getDate()).padStart(2, '0')}`;
+    Object.keys(settings.walkLog).forEach(k => { if (k < lim) delete settings.walkLog[k]; });
+    await saveSettings();
+  }
+
+  // ---------- messages (tutoiement) ----------
+  function messageFor(kind, names, addr) {
+    const n = joinNames(names), p = names.length > 1;
+    const list = kind === 'pick' ? [
+      () => `${hi()} ${addr} ! J'ai bien récupéré ${n}, on se dirige vers la forêt 🌳`,
+      () => `Coucou ${addr} ! ${n} ${p ? 'sont' : 'est'} avec moi, direction la forêt 🐾`,
+      () => `${hi()} ${addr}, c'est bon, j'ai récupéré ${n} ! On part vers la forêt 🌲`,
+    ] : [
+      () => `${hi()} ${addr} ! J'ai bien redéposé ${n}, tout s'est très bien passé 🏠`,
+      () => `Coucou ${addr} ! ${n} ${p ? 'sont' : 'est'} de retour à la maison 🏠 La balade s'est super bien passée.`,
+      () => `${addr}, c'est fait, j'ai redéposé ${n} ! La balade s'est super bien passée 🐾`,
+    ];
+    return pick(list)() + ' ';
+  }
+
+  // ---------- destinataire (même préférence que l'onglet Photos) ----------
+  function recipient(c) {
+    const p = formatPhoneForWhatsApp(c.phonePrimary), q = formatPhoneForWhatsApp(c.conjointPhone);
+    const ok = { principal: !!p, conjoint: !!q, both: !!(p && q), group: !!c.waGroupLink };
+    const kind = ok[c.photoRecipient] ? c.photoRecipient : (p ? 'principal' : q ? 'conjoint' : c.waGroupLink ? 'group' : null);
+    if (!kind) return null;
+    const a = firstNameOf(c.ownerName), b = firstNameOf(c.conjointPrenom);
+    const addr = kind === 'conjoint' ? (b || a) : ((kind === 'both' || kind === 'group') && a && b) ? `${a} et ${b}` : a;
+    return { kind, p, q, addr: addr || 'toi' };
+  }
+  const waUrl = (phone, text) => `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+
+  async function send(cid, kind) {
+    const h = todayHouseholds().find(x => x.client.id === cid); if (!h) return;
+    const r = recipient(h.client); if (!r) return;
+    const text = messageFor(kind, h.dogs.map(d => d.name), r.addr);
+    notes[cid] = null;
+    if (r.kind === 'group') {
+      try { navigator.clipboard && navigator.clipboard.writeText(text); } catch {}
+      window.open(h.client.waGroupLink, '_blank');
+      notes[cid] = { text: 'Message copié : colle-le dans le groupe WhatsApp (appui long → Coller), puis envoie.' };
+    } else if (r.kind === 'both') {
+      const w1 = window.open(waUrl(r.p, text), '_blank');
+      const w2 = window.open(waUrl(r.q, text), '_blank');
+      if (!w1 || !w2) notes[cid] = { text: 'Première conversation ouverte. Ouvre aussi la seconde :', secondPhone: r.q, secondText: text };
+    } else {
+      window.open(waUrl(r.kind === 'conjoint' ? r.q : r.p, text), '_blank');
+    }
+    await setLog(cid, kind === 'pick' ? 'pick' : 'drop');
+    renderSheet();
+  }
+
+  // ---------- affichage ----------
+  const mapsUrl = (addr) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(addr);
+  function avatar(h) {
+    const d = h.dogs.find(x => x.photo || x.faceThumb) || (h.client.dogs || []).find(x => x.photo || x.faceThumb);
+    return d ? `<img src="${escapeHtml(d.photo || d.faceThumb)}" alt="">` : '🐶';
+  }
+  function renderSheet() {
+    const hs = todayHouseholds(), sheet = $('walk-sheet');
+    if (!hs.length || $('app-wrap').style.display === 'none') {
+      sheet.hidden = true; document.body.classList.remove('has-ws'); return;
+    }
+    sheet.hidden = false; document.body.classList.add('has-ws');
+    sheet.classList.toggle('open', sheetOpen);
+    const nDogs = hs.reduce((s, h) => s + h.dogs.length, 0);
+    const picked = hs.filter(h => logOf(h.client.id).pick).length, dropped = hs.filter(h => logOf(h.client.id).drop).length;
+    $('ws-title').textContent = `🐾 Balade du jour · ${nDogs} chien${nDogs > 1 ? 's' : ''}`;
+    $('ws-sub').textContent = (inWin(DROP) || dropped > 0 && picked === hs.length)
+      ? `${dropped}/${hs.length} redéposé${dropped > 1 ? 's' : ''}` : `${picked}/${hs.length} récupéré${picked > 1 ? 's' : ''}`;
+    if (!sheetOpen) $('ws-sub').textContent += ' · tire vers le haut ▲';
+    const pickNow = inWin(PICK), dropNow = inWin(DROP);
+    $('ws-body').innerHTML = hs.map(h => {
+      const c = h.client, id = c.id, lg = logOf(id), r = recipient(c), nt = notes[id];
+      const names = h.dogs.map(d => d.name);
+      const btn = (kind, label, doneAt, now) => {
+        const txt = doneAt ? `✓ ${label} à ${doneAt} · renvoyer` : label;
+        return `<button class="ws-btn ${now && !doneAt ? 'primary' : 'muted'}" data-act="${kind}" data-c="${id}" ${r ? '' : 'disabled'}>${txt}</button>`;
+      };
+      return `<div class="ws-row${openRow === id ? ' open' : ''}">
+        <button class="ws-row-head" data-act="row" data-c="${id}">
+          <div class="ws-ava">${avatar(h)}</div>
+          <div class="ws-names"><div class="ws-dogs">${escapeHtml(joinNames(names))}</div><div class="ws-owner">${escapeHtml(c.ownerName || '')}${c.address ? ' · ' + escapeHtml(c.address) : ''}</div></div>
+          <div class="ws-chips">${lg.pick ? `<span class="ws-chip done">Récupéré ${lg.pick}</span>` : ''}${lg.drop ? `<span class="ws-chip done">Redéposé ${lg.drop}</span>` : ''}${!lg.pick && !lg.drop ? '<span class="ws-chip">À faire</span>' : ''}</div>
+        </button>
+        <div class="ws-actions">
+          ${c.address ? `<a class="ws-btn" href="${mapsUrl(c.address)}" target="_blank" rel="noopener">📍 Ouvrir l'adresse dans Google Maps</a>`
+                      : `<button class="ws-btn" data-act="addr" data-c="${id}">📍 Pas d'adresse : l'ajouter dans la fiche</button>`}
+          ${btn('pick', `🐕 J'ai récupéré ${joinNames(names)}`, lg.pick, pickNow)}
+          ${btn('drop', `🏠 J'ai redéposé ${joinNames(names)}`, lg.drop, dropNow)}
+          ${r ? `<div class="ws-hint">${pickNow ? 'Créneau récupération (7h30–9h30)' : dropNow ? 'Créneau retour (11h30–14h)' : 'Hors créneau : envoi possible quand même'} · message à ${escapeHtml(r.addr)}, tu peux le modifier dans WhatsApp</div>`
+               : '<div class="ws-hint">Aucun numéro WhatsApp sur la fiche de ce client.</div>'}
+          ${nt ? `<div class="ws-note">${escapeHtml(nt.text)}${nt.secondPhone ? ` <a href="${waUrl(nt.secondPhone, nt.secondText)}" target="_blank" rel="noopener">Ouvrir la 2ᵉ conversation</a>` : ''}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- interactions ----------
+  function setOpen(v) { sheetOpen = v; renderSheet(); }
+  $('ws-backdrop').addEventListener('click', () => setOpen(false));
+  // tirer la poignée : tap = ouvrir/fermer, glisser vers le haut = ouvrir, vers le bas = fermer
+  let y0 = null;
+  const handle = $('ws-handle');
+  handle.addEventListener('pointerdown', (e) => { y0 = e.clientY; try { handle.setPointerCapture(e.pointerId); } catch {} });
+  handle.addEventListener('pointerup', (e) => {
+    if (y0 === null) return;
+    const dy = e.clientY - y0; y0 = null;
+    if (dy < -25) setOpen(true); else if (dy > 25) setOpen(false); else setOpen(!sheetOpen);
+  });
+  handle.addEventListener('pointercancel', () => { y0 = null; });
+  $('ws-body').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-act]'); if (!b) return;
+    const id = b.dataset.c;
+    if (b.dataset.act === 'row') { openRow = openRow === id ? null : id; renderSheet(); }
+    else if (b.dataset.act === 'pick' || b.dataset.act === 'drop') send(id, b.dataset.act);
+    else if (b.dataset.act === 'addr') { setOpen(false); openClientDetail(id); }
+  });
+
+  // brancher sur render() (appelé après chargement des données et chaque modification) + rafraîchir chaque minute
+  const baseRender = render;
+  render = function () { baseRender.apply(this, arguments); renderSheet(); };
+  setInterval(renderSheet, 60000);
+  window.__walkSheet = { renderSheet, todayHouseholds, messageFor, setOpen };
 })();
 </script>
 </body>
