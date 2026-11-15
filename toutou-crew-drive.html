@@ -7253,11 +7253,8 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     sheet.hidden = false; document.body.classList.add('has-ws');
     sheet.classList.toggle('open', sheetOpen);
     const nDogs = hs.reduce((s, h) => s + h.dogs.length, 0);
-    const picked = hs.filter(h => logOf(h.client.id).pick).length, dropped = hs.filter(h => logOf(h.client.id).drop).length;
     $('ws-title').textContent = `🐾 Balade du jour · ${nDogs} chien${nDogs > 1 ? 's' : ''}`;
-    $('ws-sub').textContent = (inWin(DROP) || dropped > 0 && picked === hs.length)
-      ? `${dropped}/${hs.length} redéposé${dropped > 1 ? 's' : ''}` : `${picked}/${hs.length} récupéré${picked > 1 ? 's' : ''}`;
-    if (!sheetOpen) $('ws-sub').textContent += ' · tire vers le haut ▲';
+    $('ws-sub').textContent = sheetOpen ? '' : 'tire vers le haut ▲';
     const pickNow = inWin(PICK), dropNow = inWin(DROP);
     $('ws-body').innerHTML = hs.map(h => {
       const c = h.client, id = c.id, lg = logOf(id), r = recipient(c), nt = notes[id];
@@ -7270,7 +7267,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         <button class="ws-row-head" data-act="row" data-c="${id}">
           <div class="ws-ava">${avatar(h)}</div>
           <div class="ws-names"><div class="ws-dogs">${escapeHtml(joinNames(names))}</div><div class="ws-owner">${escapeHtml(c.ownerName || '')}${c.address ? ' · ' + escapeHtml(c.address) : ''}</div></div>
-          <div class="ws-chips">${lg.pick ? `<span class="ws-chip done">Récupéré ${lg.pick}</span>` : ''}${lg.drop ? `<span class="ws-chip done">Redéposé ${lg.drop}</span>` : ''}${!lg.pick && !lg.drop ? '<span class="ws-chip">À faire</span>' : ''}</div>
+          <div class="ws-chips">${lg.pick ? `<span class="ws-chip done">Récupéré ${lg.pick}</span>` : ''}${lg.drop ? `<span class="ws-chip done">Redéposé ${lg.drop}</span>` : ''}</div>
         </button>
         <div class="ws-actions">
           ${c.address ? `<a class="ws-btn" href="${mapsUrl(c.address)}" target="_blank" rel="noopener">📍 Ouvrir l'adresse dans Google Maps</a>`
