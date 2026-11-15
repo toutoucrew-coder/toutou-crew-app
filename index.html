@@ -3529,7 +3529,7 @@ function renderWeekView() {
   const container = document.getElementById('week-view-list');
   container.innerHTML = weekDates.map(({ code, full, dateStr, dayNum }) => {
     const recurringPairs = allActiveDogs()
-      .filter(({ dog }) => !dog.isTrial && (dog.walkDays || []).includes(code))
+      .filter(({ dog }) => !dog.isTrial && (dog.walkDays || []).includes(code) && (!dog.subscriptionSince || dog.subscriptionSince <= dateStr))
       .map(p => ({ ...p, kind: 'abonnement' }));
     const trialPairs = allActiveDogs()
       .filter(({ dog }) => dog.isTrial && dog.trialDate === dateStr)
@@ -6600,7 +6600,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   function scheduledOn(dateStr) {
     if (!dateStr) return [];
     const code = DOW_CODE_BY_JS_DAY[new Date(dateStr + 'T00:00:00').getDay()];
-    return activeDogs().filter(({ dog }) => dog.isTrial ? dog.trialDate === dateStr : (!!code && (dog.walkDays || []).includes(code)));
+    return activeDogs().filter(({ dog }) => dog.isTrial ? dog.trialDate === dateStr : (!!code && (dog.walkDays || []).includes(code) && (!dog.subscriptionSince || dog.subscriptionSince <= dateStr)));
   }
   function resetPresence() { // par défaut : tous les chiens du planning sont cochés
     state.extra = new Set();
