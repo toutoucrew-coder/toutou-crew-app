@@ -7286,6 +7286,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         <div class="ws-actions">
           ${c.address ? `<a class="ws-btn" href="${mapsUrl(c.address)}" target="_blank" rel="noopener">📍 Ouvrir l'adresse dans Google Maps</a>`
                       : `<button class="ws-btn" data-act="addr" data-c="${id}">📍 Pas d'adresse : l'ajouter dans la fiche</button>`}
+          ${h.dogs.filter(d => !d.photo).map(d => `<label class="ws-btn">📷 ${d.faceThumb ? 'Mettre une vraie photo de' : 'Ajouter une photo de'} ${escapeHtml(d.name)}<input type="file" accept="image/*" hidden data-dog-photo="${id}|${d.id}"></label>`).join('')}
           ${btn('pick', `🐕 J'ai récupéré ${joinNames(names)}`, lg.pick, pickNow)}
           ${btn('drop', `🏠 J'ai redéposé ${joinNames(names)}`, lg.drop, dropNow)}
           ${r ? `<div class="ws-hint">${pickNow ? 'Créneau récupération (7h30–9h30)' : dropNow ? 'Créneau retour (11h30–14h)' : 'Hors créneau : envoi possible quand même'} · message à ${escapeHtml(r.addr)}, tu peux le modifier dans WhatsApp</div>`
@@ -7309,6 +7310,16 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     if (dy < -25) setOpen(true); else if (dy > 25) setOpen(false); else setOpen(!sheetOpen);
   });
   handle.addEventListener('pointercancel', () => { y0 = null; });
+  $('ws-body').addEventListener('change', async (ev) => {
+    const inp = ev.target.closest('[data-dog-photo]'); if (!inp || !inp.files || !inp.files[0]) return;
+    const [cid, did] = inp.dataset.dogPhoto.split('|');
+    const c = getClientById(cid), d = c && getDogById(c, did); if (!d) return;
+    try {
+      d.photo = await cropImageToSquareDataUrl(inp.files[0]);
+      await saveClients();
+      render();
+    } catch (err) { console.error('Photo du chien', err); notes[cid] = { text: "Impossible de lire cette photo, essaie-en une autre." }; renderSheet(); }
+  });
   $('ws-body').addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-act]'); if (!b) return;
     const id = b.dataset.c;
