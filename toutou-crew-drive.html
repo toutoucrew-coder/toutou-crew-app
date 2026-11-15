@@ -7159,6 +7159,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
   const $ = (id) => document.getElementById(id);
   const PICK = [450, 570];   // 7h30 – 9h30 : récupération
   const DROP = [690, 840];   // 11h30 – 14h00 : retour à la maison
+  const TEST_MODE = true;    // TEMPORAIRE : à remettre à false (ou supprimer) après les essais
   let openRow = null, sheetOpen = false;
   const notes = {};          // clientId -> { text, secondPhone, secondText }
 
@@ -7179,6 +7180,13 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
         : !!code && (d.walkDays || []).includes(code) && (!d.subscriptionSince || d.subscriptionSince <= date));
       if (dogs.length) out.push({ client: c, dogs });
     });
+    // MODE TEST TEMPORAIRE : si rien n'est prévu aujourd'hui (week-end), on montre tous les chiens abonnés
+    if (TEST_MODE && !out.length) {
+      clients.filter(c => !c.archived).forEach(c => {
+        const dogs = (c.dogs || []).filter(d => d.isTrial || (d.walkDays || []).length > 0);
+        if (dogs.length) out.push({ client: c, dogs });
+      });
+    }
     return out.sort((a, b) => (a.client.ownerName || '').localeCompare(b.client.ownerName || ''));
   }
   const logOf = (cid) => ((settings.walkLog || {})[todayISO()] || {})[cid] || {};
@@ -7253,7 +7261,7 @@ document.getElementById('stop-sub-yes').addEventListener('click', async () => {
     sheet.hidden = false; document.body.classList.add('has-ws');
     sheet.classList.toggle('open', sheetOpen);
     const nDogs = hs.reduce((s, h) => s + h.dogs.length, 0);
-    $('ws-title').textContent = `🐾 Balade du jour · ${nDogs} chien${nDogs > 1 ? 's' : ''}`;
+    $('ws-title').textContent = `🐾 Balade du jour${TEST_MODE ? ' (test)' : ''} · ${nDogs} chien${nDogs > 1 ? 's' : ''}`;
     $('ws-sub').textContent = sheetOpen ? '' : 'tire vers le haut ▲';
     const pickNow = inWin(PICK), dropNow = inWin(DROP);
     $('ws-body').innerHTML = hs.map(h => {
