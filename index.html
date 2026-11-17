@@ -2102,7 +2102,12 @@
       </div>
 
       <label for="cd-wa-group" style="margin-top:14px; display:block;">Lien du groupe WhatsApp (une seule conversation avec les deux)</label>
-      <input type="url" id="cd-wa-group" placeholder="https://chat.whatsapp.com/…" autocapitalize="off" autocorrect="off" style="margin-bottom:4px;">
+      <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+        <input type="url" id="cd-wa-group" placeholder="https://chat.whatsapp.com/…" autocapitalize="off" autocorrect="off" style="flex:1;">
+        <button type="button" class="whatsapp-btn" id="cd-wa-group-open" title="Ouvrir le groupe WhatsApp" aria-label="Ouvrir le groupe WhatsApp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-11.9 7.8L3 21l1.7-6.1A8.5 8.5 0 1 1 21 11.5Z"/></svg>
+        </button>
+      </div>
       <div id="cd-wa-group-msg" style="font-size:0.78rem; color:var(--text-dim); margin-bottom:14px;">Dans WhatsApp : ouvre le groupe, touche son nom, puis « Inviter via un lien » et copie le lien.</div>
 
       <label for="cd-recipient">Envoyer les messages et photos à</label>
@@ -3234,6 +3239,7 @@ function renderClientContactFields(draft) {
   document.getElementById('cd-phone-conjoint').value = draft.conjointPhone || '';
   document.getElementById('cd-phone-conjoint-wa').disabled = !draft.conjointPhone;
   document.getElementById('cd-wa-group').value = draft.waGroupLink || '';
+  document.getElementById('cd-wa-group-open').disabled = !draft.waGroupLink;
   document.getElementById('cd-recipient').value = draft.photoRecipient || '';
   // le bloc (conjoint, groupe, destinataire) reste visible si un groupe existe déjà
   if (draft.waGroupLink) document.getElementById('cd-phone-conjoint-wrap').style.display = 'block';
@@ -3401,6 +3407,13 @@ document.getElementById('cd-phone-conjoint').addEventListener('change', (ev) => 
   if (!clientDetailDraft) return;
   clientDetailDraft.conjointPhone = ev.target.value.trim() || null;
   updateValidateChangesState();
+});
+document.getElementById('cd-wa-group').addEventListener('input', (ev) => {
+  document.getElementById('cd-wa-group-open').disabled = !/^https:\/\/chat\.whatsapp\.com\/\S+$/.test(ev.target.value.trim());
+});
+document.getElementById('cd-wa-group-open').addEventListener('click', () => {
+  const v = document.getElementById('cd-wa-group').value.trim();
+  if (/^https:\/\/chat\.whatsapp\.com\/\S+$/.test(v)) window.open(v, '_blank');
 });
 document.getElementById('cd-wa-group').addEventListener('change', (ev) => {
   if (!clientDetailDraft) return;
