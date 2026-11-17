@@ -2100,6 +2100,19 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-11.9 7.8L3 21l1.7-6.1A8.5 8.5 0 1 1 21 11.5Z"/></svg>
         </button>
       </div>
+
+      <label for="cd-wa-group" style="margin-top:14px; display:block;">Lien du groupe WhatsApp (une seule conversation avec les deux)</label>
+      <input type="url" id="cd-wa-group" placeholder="https://chat.whatsapp.com/…" autocapitalize="off" autocorrect="off" style="margin-bottom:4px;">
+      <div id="cd-wa-group-msg" style="font-size:0.78rem; color:var(--text-dim); margin-bottom:14px;">Dans WhatsApp : ouvre le groupe, touche son nom, puis « Inviter via un lien » et copie le lien.</div>
+
+      <label for="cd-recipient">Envoyer les messages et photos à</label>
+      <select id="cd-recipient" style="margin-bottom:6px;">
+        <option value="">Automatique (propriétaire principal)</option>
+        <option value="principal">Le propriétaire principal</option>
+        <option value="conjoint">Le conjoint</option>
+        <option value="both">Les deux séparément</option>
+        <option value="group">Le groupe WhatsApp</option>
+      </select>
     </div>
   </div>
 
@@ -3150,14 +3163,18 @@ function buildClientChangesSummary() {
     floor: 'Étage',
     phonePrimary: 'Numéro principal',
     conjointPrenom: 'Prénom du conjoint',
-    conjointPhone: 'Numéro du conjoint'
+    conjointPhone: 'Numéro du conjoint',
+    waGroupLink: 'Lien du groupe WhatsApp',
+    photoRecipient: 'Destinataire des messages'
   };
+  const recipientLabels = { principal: 'propriétaire principal', conjoint: 'conjoint', both: 'les deux séparément', group: 'groupe WhatsApp' };
   Object.keys(contactFieldLabels).forEach(key => {
     const before = clientDetailSnapshot[key] || null;
     const after = clientDetailDraft[key] || null;
     if (before !== after) {
-      const beforeText = before ? escapeHtml(before) : 'vide';
-      const afterText = after ? escapeHtml(after) : 'retiré';
+      const show = (v) => escapeHtml(key === 'photoRecipient' ? (recipientLabels[v] || v) : v);
+      const beforeText = before ? show(before) : 'vide';
+      const afterText = after ? show(after) : 'retiré';
       lines.push(`${contactFieldLabels[key]} : ${beforeText} → ${afterText}`);
     }
   });
@@ -3216,6 +3233,10 @@ function renderClientContactFields(draft) {
   document.getElementById('cd-conjoint-prenom').value = draft.conjointPrenom || '';
   document.getElementById('cd-phone-conjoint').value = draft.conjointPhone || '';
   document.getElementById('cd-phone-conjoint-wa').disabled = !draft.conjointPhone;
+  document.getElementById('cd-wa-group').value = draft.waGroupLink || '';
+  document.getElementById('cd-recipient').value = draft.photoRecipient || '';
+  // le bloc (conjoint, groupe, destinataire) reste visible si un groupe existe déjà
+  if (draft.waGroupLink) document.getElementById('cd-phone-conjoint-wrap').style.display = 'block';
 }
 
 // Convertit un numéro français (souvent saisi avec un 0 initial) au format
@@ -3381,6 +3402,25 @@ document.getElementById('cd-phone-conjoint').addEventListener('change', (ev) => 
   clientDetailDraft.conjointPhone = ev.target.value.trim() || null;
   updateValidateChangesState();
 });
+document.getElementById('cd-wa-group').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  const v = ev.target.value.trim(), msg = document.getElementById('cd-wa-group-msg');
+  if (v && !/^https:\/\/chat\.whatsapp\.com\/\S+$/.test(v)) {
+    msg.textContent = 'Lien invalide : il doit commencer par https://chat.whatsapp.com/';
+    msg.style.color = 'var(--warning)';
+    return;
+  }
+  msg.textContent = 'Dans WhatsApp : ouvre le groupe, touche son nom, puis « Inviter via un lien » et copie le lien.';
+  msg.style.color = 'var(--text-dim)';
+  clientDetailDraft.waGroupLink = v || null;
+  if (!v && clientDetailDraft.photoRecipient === 'group') { clientDetailDraft.photoRecipient = null; document.getElementById('cd-recipient').value = ''; }
+  updateValidateChangesState();
+});
+document.getElementById('cd-recipient').addEventListener('change', (ev) => {
+  if (!clientDetailDraft) return;
+  clientDetailDraft.photoRecipient = ev.target.value || null;
+  updateValidateChangesState();
+});
 document.getElementById('cd-conjoint-prenom').addEventListener('change', (ev) => {
   if (!clientDetailDraft) return;
   clientDetailDraft.conjointPrenom = ev.target.value.trim();
@@ -3456,6 +3496,8 @@ document.getElementById('client-changes-save').addEventListener('click', async (
     realClient.phonePrimary = clientDetailDraft.phonePrimary || null;
     realClient.conjointPrenom = clientDetailDraft.conjointPrenom !== undefined ? clientDetailDraft.conjointPrenom : null;
     realClient.conjointPhone = clientDetailDraft.conjointPhone || null;
+    if (clientDetailDraft.waGroupLink) realClient.waGroupLink = clientDetailDraft.waGroupLink; else delete realClient.waGroupLink;
+    if (clientDetailDraft.photoRecipient) realClient.photoRecipient = clientDetailDraft.photoRecipient; else delete realClient.photoRecipient;
     realClient.dogs = clientDetailDraft.dogs.map(d => ({ ...d }));
     realClient.subscriptionType = clientDetailDraft.subscriptionType;
 
